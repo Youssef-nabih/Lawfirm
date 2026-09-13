@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة مكتب المحاماة</title>
+    <title>نظام إدارة مكتب المحاماة والشركات</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -131,6 +131,11 @@
             font-size: 1.5rem;
         }
 
+        .stat-card.company-card .icon {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+
         .stat-card .info h3 {
             font-size: 0.85rem;
             color: #64748b;
@@ -187,13 +192,14 @@
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 700;
+            display: inline-block;
         }
 
         .badge-new { background-color: #e0f2fe; color: #0369a1; }
         .badge-active { background-color: #dcfce7; color: #15803d; }
         .badge-pending { background-color: #fef3c7; color: #b45309; }
         .badge-done { background-color: #f1f5f9; color: #475569; }
-        .badge-archived { background-color: #fee2e2; color: #b91c1c; }
+        .badge-archived, .badge-suspended { background-color: #fee2e2; color: #b91c1c; }
 
         .btn {
             padding: 8px 16px;
@@ -264,7 +270,7 @@
             padding: 25px;
             border-radius: 12px;
             width: 100%;
-            max-width: 600px;
+            max-width: 700px;
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -299,6 +305,14 @@
         .tab-content.active {
             display: block;
         }
+
+        .company-logo-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid #e2e8f0;
+        }
     </style>
 </head>
 <body>
@@ -310,6 +324,7 @@
         </div>
         <ul class="menu">
             <li><a href="#" class="active" onclick="switchPage('dashboard', this)"><i class="fa-solid fa-house"></i> الرئيسية</a></li>
+            <li><a href="#" onclick="switchPage('companies', this)"><i class="fa-solid fa-building"></i> إدارة الشركات</a></li>
             <li><a href="#" onclick="switchPage('cases', this)"><i class="fa-solid fa-briefcase"></i> إدارة القضايا</a></li>
             <li><a href="#" onclick="switchPage('tasks', this)"><i class="fa-solid fa-list-check"></i> المهام والمواعيد</a></li>
             <li><a href="#" onclick="switchPage('clients', this)"><i class="fa-solid fa-users"></i> إدارة الموكلين</a></li>
@@ -326,8 +341,23 @@
 
         <div class="content">
 
+            <!-- الرئيسية (Dashboard) -->
             <div id="dashboard" class="page-section active">
                 <div class="stats-grid">
+                    <div class="stat-card company-card">
+                        <div class="icon"><i class="fa-solid fa-building"></i></div>
+                        <div class="info">
+                            <h3>إجمالي الشركات</h3>
+                            <p id="stat-companies-count">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card company-card">
+                        <div class="icon"><i class="fa-solid fa-building-circle-check"></i></div>
+                        <div class="info">
+                            <h3>الشركات النشطة</h3>
+                            <p id="stat-active-companies-count">0</p>
+                        </div>
+                    </div>
                     <div class="stat-card">
                         <div class="icon"><i class="fa-solid fa-scale-balanced"></i></div>
                         <div class="info">
@@ -373,6 +403,171 @@
                 </div>
             </div>
 
+            <!-- إدارة الشركات (Companies Management) -->
+            <div id="companies" class="page-section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>إضافة شركة جديدة</h2>
+                    </div>
+
+                    <div class="odoo-tabs">
+                        <button class="odoo-tab-btn active" onclick="switchCompanyTab('compBasicTab', this)">البيانات الأساسية</button>
+                        <button class="odoo-tab-btn" onclick="switchCompanyTab('compContactTab', this)">التواصل والعنوان</button>
+                        <button class="odoo-tab-btn" onclick="switchCompanyTab('compSystemTab', this)">إعدادات النظام والتابعية</button>
+                    </div>
+
+                    <!-- Tab 1: البيانات الأساسية -->
+                    <div id="compBasicTab" class="tab-content active">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>اسم الشركة التجاري *</label>
+                                <input type="text" id="compName" placeholder="مثال: شركة النور للحلول البرمجية">
+                            </div>
+                            <div class="form-group">
+                                <label>الاسم الرسمي / القانوني</label>
+                                <input type="text" id="compLegalName" placeholder="الاسم المسجل بالسجل التجاري">
+                            </div>
+                            <div class="form-group">
+                                <label>الرقم الضريبي (Tax ID) *</label>
+                                <input type="text" id="compTaxId" placeholder="مثال: 123-456-789">
+                            </div>
+                            <div class="form-group">
+                                <label>رقم السجل التجاري</label>
+                                <input type="text" id="compCommercialRegister" placeholder="مثال: 102030">
+                            </div>
+                            <div class="form-group">
+                                <label>مجال العمل (Industry)</label>
+                                <select id="compIndustry">
+                                    <option value="تكنولوجيا وتطوير برمجيات">تكنولوجيا وتطوير برمجيات</option>
+                                    <option value="مقاولات وإنشاءات">مقاولات وإنشاءات</option>
+                                    <option value="استيراد وتصدير">استيراد وتصدير</option>
+                                    <option value="تجارة وتجزئة">تجارة وتجزئة</option>
+                                    <option value="خدمات قانونية ومالية">خدمات قانونية ومالية</option>
+                                    <option value="عقارات">عقارات</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>حجم الشركة (Company Size)</label>
+                                <select id="compSize">
+                                    <option value="1-10">1 - 10 موظفين</option>
+                                    <option value="11-50">11 - 50 موظف</option>
+                                    <option value="51-200">51 - 200 موظف</option>
+                                    <option value="+200">أكثر من 200 موظف</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>شعار الشركة (Logo)</label>
+                                <input type="file" id="compLogoInput" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: التواصل والعنوان -->
+                    <div id="compContactTab" class="tab-content">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>البريد الإلكتروني الرسمي *</label>
+                                <input type="email" id="compEmail" placeholder="info@company.com">
+                            </div>
+                            <div class="form-group">
+                                <label>رقم الهاتف</label>
+                                <input type="text" id="compPhone" placeholder="مثال: 01000000000">
+                            </div>
+                            <div class="form-group">
+                                <label>الموقع الإلكتروني</label>
+                                <input type="url" id="compWebsite" placeholder="https://example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>الدولة</label>
+                                <input type="text" id="compCountry" value="مصر">
+                            </div>
+                            <div class="form-group">
+                                <label>المحافظة / الولاية</label>
+                                <input type="text" id="compState" placeholder="القاهرة">
+                            </div>
+                            <div class="form-group">
+                                <label>المدينة</label>
+                                <input type="text" id="compCity" placeholder="مدينة نصر">
+                            </div>
+                            <div class="form-group">
+                                <label>الرمز البريدي</label>
+                                <input type="text" id="compPostalCode" placeholder="11511">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>العنوان التفصيلي (الشارع / المبنى)</label>
+                                <input type="text" id="compAddressStreet" placeholder="مثال: 15 شارع الطيران - الدور الرابع">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: إعدادات النظام -->
+                    <div id="compSystemTab" class="tab-content">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>العملة الأساسية</label>
+                                <select id="compCurrency">
+                                    <option value="EGP">جنيه مصري (EGP)</option>
+                                    <option value="SAR">ريال سعودي (SAR)</option>
+                                    <option value="USD">دولار أمريكي (USD)</option>
+                                    <option value="EUR">يورو (EUR)</option>
+                                    <option value="AED">درهم إماراتي (AED)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>حالة الشركة</label>
+                                <select id="compStatus">
+                                    <option value="active">نشطة (Active)</option>
+                                    <option value="pending">قيد الانتظار (Pending)</option>
+                                    <option value="suspended">معلقة (Suspended)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>نوع الشركة</label>
+                                <select id="compIsParent" onchange="toggleParentCompanySelect(this)">
+                                    <option value="true">شركة أم (Parent Company)</option>
+                                    <option value="false">شركة فرعية (Subsidiary)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="parentCompanyGroup" style="display: none;">
+                                <label>الشركة الأم التابعة لها</label>
+                                <select id="compParentId">
+                                    <option value="">-- اختر الشركة الأم --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px;">
+                        <button class="btn btn-primary" onclick="addCompany()"><i class="fa-solid fa-plus"></i> إضافة الشركة</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>دليل الشركات المسجلة</h2>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الشعار</th>
+                                <th>اسم الشركة</th>
+                                <th>الرقم الضريبي</th>
+                                <th>المجال</th>
+                                <th>التواصل</th>
+                                <th>العملة</th>
+                                <th>الحالة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companiesTableBody">
+                            <tr><td colspan="8">جاري تحميل البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- إدارة القضايا -->
             <div id="cases" class="page-section">
                 <div class="panel">
                     <div class="panel-header">
@@ -514,6 +709,7 @@
                 </div>
             </div>
 
+            <!-- المهام والمواعيد -->
             <div id="tasks" class="page-section">
                 <div class="panel">
                     <div class="panel-header">
@@ -527,6 +723,7 @@
                 </div>
             </div>
 
+            <!-- إدارة الموكلين -->
             <div id="clients" class="page-section">
                 <div class="panel">
                     <div class="panel-header">
@@ -572,6 +769,7 @@
         </div>
     </div>
 
+    <!-- Modal تعديل بيانات القضية -->
     <div id="editCaseModal" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px;">تعديل بيانات القضية</h3>
@@ -653,6 +851,87 @@
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
                 <button class="btn btn-primary" onclick="saveCaseUpdate()">حفظ التعديلات</button>
                 <button class="btn" style="background:#cbd5e1;" onclick="closeEditModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal تعديل بيانات الشركة -->
+    <div id="editCompanyModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">تعديل بيانات الشركة</h3>
+            <input type="hidden" id="editCompId">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>اسم الشركة التجاري</label>
+                    <input type="text" id="editCompName">
+                </div>
+                <div class="form-group">
+                    <label>الاسم الرسمى</label>
+                    <input type="text" id="editCompLegalName">
+                </div>
+                <div class="form-group">
+                    <label>الرقم الضريبي</label>
+                    <input type="text" id="editCompTaxId">
+                </div>
+                <div class="form-group">
+                    <label>السجل التجاري</label>
+                    <input type="text" id="editCompCommercialRegister">
+                </div>
+                <div class="form-group">
+                    <label>المجال</label>
+                    <select id="editCompIndustry">
+                        <option value="تكنولوجيا وتطوير برمجيات">تكنولوجيا وتطوير برمجيات</option>
+                        <option value="مقاولات وإنشاءات">مقاولات وإنشاءات</option>
+                        <option value="استيراد وتصدير">استيراد وتصدير</option>
+                        <option value="تجارة وتجزئة">تجارة وتجزئة</option>
+                        <option value="خدمات قانونية ومالية">خدمات قانونية ومالية</option>
+                        <option value="عقارات">عقارات</option>
+                        <option value="أخرى">أخرى</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>الحجم</label>
+                    <select id="editCompSize">
+                        <option value="1-10">1 - 10 موظفين</option>
+                        <option value="11-50">11 - 50 موظف</option>
+                        <option value="51-200">51 - 200 موظف</option>
+                        <option value="+200">أكثر من 200 موظف</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" id="editCompEmail">
+                </div>
+                <div class="form-group">
+                    <label>الهاتف</label>
+                    <input type="text" id="editCompPhone">
+                </div>
+                <div class="form-group">
+                    <label>الموقع الإلكتروني</label>
+                    <input type="url" id="editCompWebsite">
+                </div>
+                <div class="form-group">
+                    <label>العملة</label>
+                    <select id="editCompCurrency">
+                        <option value="EGP">EGP</option>
+                        <option value="SAR">SAR</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="AED">AED</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>الحالة</label>
+                    <select id="editCompStatus">
+                        <option value="active">نشطة (Active)</option>
+                        <option value="pending">قيد الانتظار (Pending)</option>
+                        <option value="suspended">معلقة (Suspended)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="saveCompanyUpdate()">حفظ التعديلات</button>
+                <button class="btn" style="background:#cbd5e1;" onclick="closeEditCompanyModal()">إلغاء</button>
             </div>
         </div>
     </div>

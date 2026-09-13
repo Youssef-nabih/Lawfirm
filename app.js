@@ -4,7 +4,11 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allCasesCache = []; 
+let allCompaniesCache = [];
 
+// ==========================================
+// 📂 FILE UPLOAD HELPER (SUPABASE STORAGE)
+// ==========================================
 async function uploadFileToSupabase(fileInputOrSource, bucketName = 'documents') {
     let file = null;
 
@@ -36,6 +40,9 @@ async function uploadFileToSupabase(fileInputOrSource, bucketName = 'documents')
     return publicUrlData.publicUrl;
 }
 
+// ==========================================
+// 🧭 NAVIGATION & TAB SWITCHING
+// ==========================================
 function switchPage(pageId, element) {
     document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
     document.querySelectorAll('.sidebar .menu li a').forEach(a => a.classList.remove('active'));
@@ -46,14 +53,240 @@ function switchPage(pageId, element) {
 }
 
 function switchOdooTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-    document.querySelectorAll('.odoo-tab-btn').forEach(b => b.classList.remove('active'));
+    const parentPanel = btn.closest('.panel');
+    if (parentPanel) {
+        parentPanel.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        parentPanel.querySelectorAll('.odoo-tab-btn').forEach(b => b.classList.remove('active'));
+    }
 
     const targetTab = document.getElementById(tabId);
     if (targetTab) targetTab.classList.add('active');
     if (btn) btn.classList.add('active');
 }
 
+function switchCompanyTab(tabId, btn) {
+    switchOdooTab(tabId, btn);
+}
+
+function toggleParentCompanySelect(selectElem) {
+    const group = document.getElementById('parentCompanyGroup');
+    if (group) {
+        group.style.display = (selectElem.value === 'false') ? 'flex' : 'none';
+    }
+}
+
+// ==========================================
+// 🏢 COMPANIES MANAGEMENT LOGIC (SUPABASE)
+// ==========================================
+async function fetchCompanies() {
+    const { data, error } = await db.from('companies').select('*').order('id', { ascending: false });
+    if (error) {
+        console.error('Error fetching companies:', error.message);
+        return;
+    }
+
+    allCompaniesCache = data || [];
+    renderCompaniesTable(allCompaniesCache);
+    updateCompaniesStats();
+    populateParentCompanyDropdown();
+}
+
+function renderCompaniesTable(companiesData) {
+    const tbody = document.getElementById('companiesTableBody');
+    if (!tbody) return;
+
+    if (!companiesData || companiesData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">لا توجد شركات مسجلة حالياً</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = companiesData.map(c => {
+        let statusBadge = '<span class="badge badge-active">نشطة</span>';
+        if (c.status === 'pending') statusBadge = '<span class="badge badge-pending">قيد الانتظار</span>';
+        if (c.status === 'suspended') statusBadge = '<span class="badge badge-suspended">معلقة</span>';
+
+        const logoHtml = c.logo_url 
+            ? `<a href="${c.logo_url}" target="_blank"><img src="${c.logo_url}" class="company-logo-preview" alt="logo"></a>`
+            : `<div style="width:40px;height:40px;background:#e2e8f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;"><i class="fa-solid fa-building"></i></div>`;
+
+        return `
+            <tr>
+                <td>${logoHtml}</td>
+                <td>
+                    <b>${c.name || ''}</b>
+                    ${c.legal_name ? `<br><small style="color:#64748b;">${c.legal_name}</small>` : ''}
+                </td>
+                <td>${c.tax_id || 'غير مسجل'}</td>
+                <td>${c.industry || '-'}</td>
+                <td>
+                    <div><i class="fa-solid fa-envelope" style="font-size:0.75rem;color:#0284c7;"></i> ${c.email || '-'}</div>
+                    ${c.phone ? `<div><i class="fa-solid fa-phone" style="font-size:0.75rem;color:#16a34a;"></i> ${c.phone}</div>` : ''}
+                </td>
+                <td><b>${c.currency || 'EGP'}</b></td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="openEditCompanyModal(${c.id})"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCompany(${c.id})"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateCompaniesStats() {
+    const totalStat = document.getElementById('stat-companies-count');
+    const activeStat = document.getElementById('stat-active-companies-count');
+
+    if (totalStat) totalStat.innerText = allCompaniesCache.length;
+    if (activeStat) {
+        const activeCount = allCompaniesCache.filter(c => c.status === 'active' || !c.status).length;
+        activeStat.innerText = activeCount;
+    }
+}
+
+function populateParentCompanyDropdown() {
+    const select = document.getElementById('compParentId');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- اختر الشركة الأم --</option>';
+    allCompaniesCache.filter(c => c.is_parent).forEach(comp => {
+        const option = document.createElement('option');
+        option.value = comp.id;
+        option.textContent = comp.name;
+        select.appendChild(option);
+    });
+}
+
+async function addCompany() {
+    const name = document.getElementById('compName')?.value.trim();
+    const legal_name = document.getElementById('compLegalName')?.value.trim();
+    const tax_id = document.getElementById('compTaxId')?.value.trim();
+    const commercial_register = document.getElementById('compCommercialRegister')?.value.trim();
+    const industry = document.getElementById('compIndustry')?.value;
+    const company_size = document.getElementById('compSize')?.value;
+
+    const email = document.getElementById('compEmail')?.value.trim();
+    const phone = document.getElementById('compPhone')?.value.trim();
+    const website = document.getElementById('compWebsite')?.value.trim();
+    const country = document.getElementById('compCountry')?.value.trim();
+    const state_province = document.getElementById('compState')?.value.trim();
+    const city = document.getElementById('compCity')?.value.trim();
+    const postal_code = document.getElementById('compPostalCode')?.value.trim();
+    const address_street = document.getElementById('compAddressStreet')?.value.trim();
+
+    const currency = document.getElementById('compCurrency')?.value;
+    const status = document.getElementById('compStatus')?.value;
+    const is_parent = document.getElementById('compIsParent')?.value === 'true';
+    const parent_id = document.getElementById('compParentId')?.value || null;
+
+    if (!name || !tax_id || !email) {
+        return alert('برجاء ملء الحقول الأساسية المطلوبة: اسم الشركة، الرقم الضريبي، والبريد الإلكتروني.');
+    }
+
+    const logo_url = await uploadFileToSupabase('compLogoInput');
+
+    const newCompany = {
+        name, legal_name, tax_id, commercial_register, industry, company_size,
+        logo_url, email, phone, website, country, state_province, city,
+        postal_code, address_street, currency, status, is_parent, parent_id
+    };
+
+    const { error } = await db.from('companies').insert([newCompany]);
+
+    if (error) {
+        return alert('حدث خطأ أثناء إضافة الشركة: ' + error.message);
+    }
+
+    alert('تمت إضافة الشركة بنجاح!');
+
+    const fieldsToReset = [
+        'compName', 'compLegalName', 'compTaxId', 'compCommercialRegister',
+        'compEmail', 'compPhone', 'compWebsite', 'compState', 'compCity',
+        'compPostalCode', 'compAddressStreet', 'compLogoInput'
+    ];
+    fieldsToReset.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    fetchCompanies();
+}
+
+function openEditCompanyModal(id) {
+    const comp = allCompaniesCache.find(c => c.id === id);
+    if (!comp) return;
+
+    document.getElementById('editCompId').value = comp.id;
+    document.getElementById('editCompName').value = comp.name || '';
+    document.getElementById('editCompLegalName').value = comp.legal_name || '';
+    document.getElementById('editCompTaxId').value = comp.tax_id || '';
+    document.getElementById('editCompCommercialRegister').value = comp.commercial_register || '';
+    document.getElementById('editCompIndustry').value = comp.industry || 'أخرى';
+    document.getElementById('editCompSize').value = comp.company_size || '1-10';
+    document.getElementById('editCompEmail').value = comp.email || '';
+    document.getElementById('editCompPhone').value = comp.phone || '';
+    document.getElementById('editCompWebsite').value = comp.website || '';
+    document.getElementById('editCompCurrency').value = comp.currency || 'EGP';
+    document.getElementById('editCompStatus').value = comp.status || 'active';
+
+    const modal = document.getElementById('editCompanyModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeEditCompanyModal() {
+    const modal = document.getElementById('editCompanyModal');
+    if (modal) modal.classList.remove('active');
+}
+
+async function saveCompanyUpdate() {
+    const id = document.getElementById('editCompId').value;
+    const name = document.getElementById('editCompName').value.trim();
+    const legal_name = document.getElementById('editCompLegalName').value.trim();
+    const tax_id = document.getElementById('editCompTaxId').value.trim();
+    const commercial_register = document.getElementById('editCompCommercialRegister').value.trim();
+    const industry = document.getElementById('editCompIndustry').value;
+    const company_size = document.getElementById('editCompSize').value;
+    const email = document.getElementById('editCompEmail').value.trim();
+    const phone = document.getElementById('editCompPhone').value.trim();
+    const website = document.getElementById('editCompWebsite').value.trim();
+    const currency = document.getElementById('editCompCurrency').value;
+    const status = document.getElementById('editCompStatus').value;
+
+    if (!name || !tax_id || !email) return alert('الاسم والرقم الضريبي والبريد الإلكتروني مطلوبين.');
+
+    const updateData = {
+        name, legal_name, tax_id, commercial_register, industry,
+        company_size, email, phone, website, currency, status
+    };
+
+    const { error } = await db.from('companies').update(updateData).eq('id', id);
+
+    if (error) {
+        return alert('حدث خطأ أثناء التحديث: ' + error.message);
+    }
+
+    closeEditCompanyModal();
+    fetchCompanies();
+}
+
+async function deleteCompany(id) {
+    const comp = allCompaniesCache.find(c => c.id === id);
+    const title = comp ? comp.name : 'هذه الشركة';
+
+    if (!confirm(`هل أنت متأكد من حذف شركة "${title}"؟`)) return;
+
+    const { error } = await db.from('companies').delete().eq('id', id);
+
+    if (error) {
+        alert('حدث خطأ أثناء الحذف: ' + error.message);
+    } else {
+        fetchCompanies();
+    }
+}
+
+// ==========================================
+// ⚖️ CASES MANAGEMENT LOGIC
+// ==========================================
 function addSessionRow(data = {}) {
     const tbody = document.getElementById('sessionsTableBody');
     if (!tbody) return;
@@ -343,6 +576,9 @@ async function saveCaseUpdate() {
     fetchCases();
 }
 
+// ==========================================
+// 👥 CLIENTS MANAGEMENT LOGIC
+// ==========================================
 async function fetchClients() {
     const { data, error } = await db.from('clients').select('*').order('id', { ascending: false });
     if (error) return console.error('Error fetching clients:', error.message);
@@ -402,6 +638,9 @@ async function deleteClient(id) {
     else fetchClients();
 }
 
+// ==========================================
+// 📌 TASKS MANAGEMENT LOGIC
+// ==========================================
 async function fetchTasks() {
     const { data, error } = await db.from('tasks').select('*').order('id', { ascending: false });
     if (error) return console.error('Error fetching tasks:', error.message);
@@ -469,13 +708,18 @@ async function deleteTask(taskId) {
     }
 }
 
+// ==========================================
+// ⚡ REALTIME SUBSCRIPTIONS & INIT
+// ==========================================
 db.channel('public:updates')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchTasks())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => fetchCases())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchClients())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => fetchCompanies())
     .subscribe();
 
 document.addEventListener('DOMContentLoaded', () => {
+    fetchCompanies();
     fetchCases();
     fetchTasks();
     fetchClients();
