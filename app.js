@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://oscugslepanxyogvkaxq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zY3Vnc2xlcGFueHlvZ3ZrYXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNjI1MTEsImV4cCI6MjEwNDczODUxMX0.AtmmicXa-4JDW0Ck5hkeX3IqANE4XaazmDwceJwocLc';
+const SUPABASE_ANON_KEY = 'sb_publishable_zJOsLj6oLm2A6zjR-NcvGg_yE0_Gfmp';
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -453,17 +453,17 @@ async function addCase() {
         const sessionPromises = [];
         document.querySelectorAll('#sessionsTableBody tr').forEach(row => {
             const session_date = row.querySelector('.session-date')?.value;
-            const session_subject = row.querySelector('.session-subject')?.value;
-            const attending_lawyer = row.querySelector('.session-lawyer')?.value;
-            const decision = row.querySelector('.session-decision')?.value;
+            const session_subject = row.querySelector('.session-subject')?.value?.trim();
+            const attending_lawyer = row.querySelector('.session-lawyer')?.value?.trim();
+            const decision = row.querySelector('.session-decision')?.value?.trim();
 
             if (session_date || session_subject || decision) {
                 sessionPromises.push(db.from('case_sessions').insert([{
                     case_id: caseId,
                     session_date: session_date || null,
-                    session_subject,
-                    attending_lawyer,
-                    decision
+                    session_subject: session_subject || '',
+                    attending_lawyer: attending_lawyer || '',
+                    decision: decision || ''
                 }]));
             }
         });
@@ -658,33 +658,81 @@ async function fetchTasks() {
         return;
     }
 
-    list.innerHTML = data.map(t => `
-        <li style="padding: 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: ${t.completed ? '#f8fafc' : '#ffffff'};">
-            <span style="${t.completed ? 'text-decoration: line-through; color: #94a3b8;' : 'font-weight: 500;'}">
-                📌 ${t.title}
-            </span>
-            <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn btn-sm ${t.completed ? 'btn-secondary' : 'btn-success'}" 
-                        onclick="toggleCompleteTask(${t.id}, ${t.completed})">
-                    ${t.completed ? '<i class="fa-solid fa-rotate-left"></i> إرجاع' : '<i class="fa-solid fa-check"></i> تمت'}
-                </button>
-                <button type="button" class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">
-                    <i class="fa-solid fa-trash"></i> حذف
-                </button>
-            </div>
-        </li>
-    `).join('');
+    const now = new Date();
+
+    list.innerHTML = data.map(t => {
+        let isOverdue = false;
+        let daysText = '';
+
+        if (t.estimated_days && t.estimated_days > 0) {
+            const createdAt = t.created_at ? new Date(t.created_at) : new Date();
+            const dueDate = new Date(createdAt);
+            dueDate.setDate(dueDate.getDate() + parseInt(t.estimated_days, 10));
+
+            isOverdue = !t.completed && now > dueDate;
+            daysText = `المدة المقدرة: ${t.estimated_days} يوم`;
+        }
+
+        const bgColor = t.completed ? '#f8fafc' : (isOverdue ? '#fef2f2' : '#ffffff');
+        const borderColor = isOverdue ? '#ef4444' : '#e2e8f0';
+
+        return `
+            <li style="padding: 12px; border: 1px solid ${borderColor}; border-right: ${isOverdue ? '5px solid #ef4444' : '1px solid ' + borderColor}; display: flex; justify-content: space-between; align-items: center; background: ${bgColor}; margin-bottom: 8px; border-radius: 6px;">
+                <div>
+                    <span style="${t.completed ? 'text-decoration: line-through; color: #94a3b8;' : 'font-weight: 500;'}">
+                        📌 ${t.title}
+                    </span>
+                    ${daysText ? `
+                        <div style="font-size: 0.8rem; color: ${isOverdue ? '#dc2626' : '#64748b'}; margin-top: 4px; font-weight: ${isOverdue ? 'bold' : 'normal'};">
+                            ⏱️ ${daysText} ${isOverdue ? '(متأخرة!)' : ''}
+                        </div>
+                    ` : ''}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-sm ${t.completed ? 'btn-secondary' : 'btn-success'}" 
+                            onclick="toggleCompleteTask(${t.id}, ${t.completed})">
+                        ${t.completed ? '<i class="fa-solid fa-rotate-left"></i> إرجاع' : '<i class="fa-solid fa-check"></i> تمت'}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">
+                        <i class="fa-solid fa-trash"></i> حذف
+                    </button>
+                </div>
+            </li>
+        `;
+    }).join('');
 }
 
 async function addTask() {
     const taskInput = document.getElementById('taskTitle');
-    const title = taskInput ? taskInput.value.trim() : '';
-    if (!title) return alert('برجاء إدخال تفاصيل المهمة');
+    const estimationInput = document.getElementById('taskEstimation');
 
-    const { error } = await db.from('tasks').insert([{ title, assigned_to: 'المكتب', completed: false }]);
-    if (error) return alert('خطأ أثناء الإضافة: ' + error.message);
+    const title = taskInput ? taskInput.value.trim() : '';
+    const estimatedDays = estimationInput ? parseInt(estimationInput.value, 10) : 0;
+
+    if (!title) {
+        return alert('برجاء إدخال تفاصيل المهمة');
+    }
+
+    if (isNaN(estimatedDays) || estimatedDays <= 0) {
+        return alert('برجاء إدخال عدد أيام صحيح لتقدير المهمة');
+    }
+
+    const { error } = await db.from('tasks').insert([{ 
+        title: title, 
+        assigned_to: 'المكتب', 
+        completed: false,
+        estimated_days: estimatedDays,
+        created_at: new Date().toISOString()
+    }]);
+
+    if (error) {
+        console.error('Error inserting task:', error);
+        return alert('خطأ أثناء الإضافة: ' + error.message);
+    }
 
     if (taskInput) taskInput.value = '';
+    if (estimationInput) estimationInput.value = '';
+
     fetchTasks();
 }
 
@@ -711,16 +759,27 @@ async function deleteTask(taskId) {
 // ==========================================
 // ⚡ REALTIME SUBSCRIPTIONS & INIT
 // ==========================================
-db.channel('public:updates')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchTasks())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => fetchCases())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchClients())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => fetchCompanies())
-    .subscribe();
+db.channel('tasks-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchTasks())
+  .subscribe();
+
+db.channel('cases-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'cases' }, () => fetchCases())
+  .subscribe();
+
+db.channel('clients-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchClients())
+  .subscribe();
+
+db.channel('companies-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => fetchCompanies())
+  .subscribe();
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchCompanies();
     fetchCases();
     fetchTasks();
     fetchClients();
+
+    setInterval(fetchTasks, 60000);
 });
