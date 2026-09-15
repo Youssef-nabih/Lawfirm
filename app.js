@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://oscugslepanxyogvkaxq.supabase.co';
+const SUPABASE_URL = 'https://oscUGSlepanxyogvkaxq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_zJOsLj6oLm2A6zjR-NcvGg_yE0_Gfmp';
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -6,9 +6,6 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let allCasesCache = []; 
 let allCompaniesCache = [];
 
-// ==========================================
-// 📂 FILE UPLOAD HELPER (SUPABASE STORAGE)
-// ==========================================
 async function uploadFileToSupabase(fileInputOrSource, bucketName = 'documents') {
     let file = null;
 
@@ -40,9 +37,6 @@ async function uploadFileToSupabase(fileInputOrSource, bucketName = 'documents')
     return publicUrlData.publicUrl;
 }
 
-// ==========================================
-// 🧭 NAVIGATION & TAB SWITCHING
-// ==========================================
 function switchPage(pageId, element) {
     document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
     document.querySelectorAll('.sidebar .menu li a').forEach(a => a.classList.remove('active'));
@@ -75,9 +69,6 @@ function toggleParentCompanySelect(selectElem) {
     }
 }
 
-// ==========================================
-// 🏢 COMPANIES MANAGEMENT LOGIC (SUPABASE)
-// ==========================================
 async function fetchCompanies() {
     const { data, error } = await db.from('companies').select('*').order('id', { ascending: false });
     if (error) {
@@ -284,9 +275,6 @@ async function deleteCompany(id) {
     }
 }
 
-// ==========================================
-// ⚖️ CASES MANAGEMENT LOGIC
-// ==========================================
 function addSessionRow(data = {}) {
     const tbody = document.getElementById('sessionsTableBody');
     if (!tbody) return;
@@ -576,9 +564,6 @@ async function saveCaseUpdate() {
     fetchCases();
 }
 
-// ==========================================
-// 👥 CLIENTS MANAGEMENT LOGIC
-// ==========================================
 async function fetchClients() {
     const { data, error } = await db.from('clients').select('*').order('id', { ascending: false });
     if (error) return console.error('Error fetching clients:', error.message);
@@ -638,9 +623,6 @@ async function deleteClient(id) {
     else fetchClients();
 }
 
-// ==========================================
-// 📌 TASKS MANAGEMENT LOGIC
-// ==========================================
 async function fetchTasks() {
     const { data, error } = await db.from('tasks').select('*').order('id', { ascending: false });
     if (error) return console.error('Error fetching tasks:', error.message);
@@ -658,19 +640,19 @@ async function fetchTasks() {
         return;
     }
 
-    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     list.innerHTML = data.map(t => {
         let isOverdue = false;
-        let daysText = '';
+        let dueDateText = '';
 
-        if (t.estimated_days && t.estimated_days > 0) {
-            const createdAt = t.created_at ? new Date(t.created_at) : new Date();
-            const dueDate = new Date(createdAt);
-            dueDate.setDate(dueDate.getDate() + parseInt(t.estimated_days, 10));
+        if (t.due_date) {
+            const dueDate = new Date(t.due_date);
+            dueDate.setHours(0, 0, 0, 0);
 
-            isOverdue = !t.completed && now > dueDate;
-            daysText = `المدة المقدرة: ${t.estimated_days} يوم`;
+            isOverdue = !t.completed && today > dueDate;
+            dueDateText = `الموعد النهائي: ${t.due_date}`;
         }
 
         const bgColor = t.completed ? '#f8fafc' : (isOverdue ? '#fef2f2' : '#ffffff');
@@ -682,9 +664,9 @@ async function fetchTasks() {
                     <span style="${t.completed ? 'text-decoration: line-through; color: #94a3b8;' : 'font-weight: 500;'}">
                         📌 ${t.title}
                     </span>
-                    ${daysText ? `
+                    ${dueDateText ? `
                         <div style="font-size: 0.8rem; color: ${isOverdue ? '#dc2626' : '#64748b'}; margin-top: 4px; font-weight: ${isOverdue ? 'bold' : 'normal'};">
-                            ⏱️ ${daysText} ${isOverdue ? '(متأخرة!)' : ''}
+                            📅 ${dueDateText} ${isOverdue ? '(متأخرة!)' : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -704,24 +686,19 @@ async function fetchTasks() {
 
 async function addTask() {
     const taskInput = document.getElementById('taskTitle');
-    const estimationInput = document.getElementById('taskEstimation');
+    const dueDateInput = document.getElementById('taskDueDate');
 
     const title = taskInput ? taskInput.value.trim() : '';
-    const estimatedDays = estimationInput ? parseInt(estimationInput.value, 10) : 0;
+    const dueDate = dueDateInput ? dueDateInput.value : null;
 
-    if (!title) {
-        return alert('برجاء إدخال تفاصيل المهمة');
-    }
-
-    if (isNaN(estimatedDays) || estimatedDays <= 0) {
-        return alert('برجاء إدخال عدد أيام صحيح لتقدير المهمة');
-    }
+    if (!title) return alert('برجاء إدخال تفاصيل المهمة');
+    if (!dueDate) return alert('برجاء اختيار تاريخ استحقاق المهمة');
 
     const { error } = await db.from('tasks').insert([{ 
         title: title, 
         assigned_to: 'المكتب', 
         completed: false,
-        estimated_days: estimatedDays,
+        due_date: dueDate,
         created_at: new Date().toISOString()
     }]);
 
@@ -731,7 +708,7 @@ async function addTask() {
     }
 
     if (taskInput) taskInput.value = '';
-    if (estimationInput) estimationInput.value = '';
+    if (dueDateInput) dueDateInput.value = '';
 
     fetchTasks();
 }
@@ -756,9 +733,6 @@ async function deleteTask(taskId) {
     }
 }
 
-// ==========================================
-// ⚡ REALTIME SUBSCRIPTIONS & INIT
-// ==========================================
 db.channel('tasks-changes')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchTasks())
   .subscribe();
