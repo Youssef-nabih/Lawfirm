@@ -652,15 +652,15 @@ async function fetchTasks() {
             dueDate.setHours(0, 0, 0, 0);
 
             isOverdue = !t.completed && today > dueDate;
-            dueDateText = `الموعد النهائي: ${t.due_date}`;
+            dueDateText = `تاريخ التنفيذ: ${t.due_date}`;
         }
 
         const bgColor = t.completed ? '#f8fafc' : (isOverdue ? '#fef2f2' : '#ffffff');
         const borderColor = isOverdue ? '#ef4444' : '#e2e8f0';
 
         return `
-            <li style="padding: 12px; border: 1px solid ${borderColor}; border-right: ${isOverdue ? '5px solid #ef4444' : '1px solid ' + borderColor}; display: flex; justify-content: space-between; align-items: center; background: ${bgColor}; margin-bottom: 8px; border-radius: 6px;">
-                <div>
+            <li id="task-item-${t.id}" style="padding: 12px; border: 1px solid ${borderColor}; border-right: ${isOverdue ? '5px solid #ef4444' : '1px solid ' + borderColor}; display: flex; justify-content: space-between; align-items: center; background: ${bgColor}; margin-bottom: 8px; border-radius: 6px;">
+                <div style="flex-grow: 1;">
                     <span style="${t.completed ? 'text-decoration: line-through; color: #94a3b8;' : 'font-weight: 500;'}">
                         📌 ${t.title}
                     </span>
@@ -671,6 +671,9 @@ async function fetchTasks() {
                     ` : ''}
                 </div>
                 <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-sm btn-warning" onclick="editTaskInline(${t.id}, '${t.title.replace(/'/g, "\\'")}', '${t.due_date || ''}')">
+                        <i class="fa-solid fa-pen"></i> تعديل
+                    </button>
                     <button type="button" class="btn btn-sm ${t.completed ? 'btn-secondary' : 'btn-success'}" 
                             onclick="toggleCompleteTask(${t.id}, ${t.completed})">
                         ${t.completed ? '<i class="fa-solid fa-rotate-left"></i> إرجاع' : '<i class="fa-solid fa-check"></i> تمت'}
@@ -692,7 +695,7 @@ async function addTask() {
     const dueDate = dueDateInput ? dueDateInput.value : null;
 
     if (!title) return alert('برجاء إدخال تفاصيل المهمة');
-    if (!dueDate) return alert('برجاء اختيار تاريخ استحقاق المهمة');
+    if (!dueDate) return alert('برجاء اختيار تاريخ التنفيذ');
 
     const { error } = await db.from('tasks').insert([{ 
         title: title, 
@@ -711,6 +714,48 @@ async function addTask() {
     if (dueDateInput) dueDateInput.value = '';
 
     fetchTasks();
+}
+
+function editTaskInline(taskId, currentTitle, currentDueDate) {
+    const li = document.getElementById(`task-item-${taskId}`);
+    if (!li) return;
+
+    li.innerHTML = `
+        <div style="display: flex; gap: 8px; flex-grow: 1; align-items: center;">
+            <input type="text" id="edit-task-title-${taskId}" value="${currentTitle}" class="form-control" style="flex: 2;">
+            <input type="date" id="edit-task-date-${taskId}" value="${currentDueDate}" class="form-control" style="flex: 1;">
+        </div>
+        <div style="display: flex; gap: 8px; margin-right: 8px;">
+            <button type="button" class="btn btn-sm btn-success" onclick="saveTaskUpdate(${taskId})">
+                <i class="fa-solid fa-check"></i> حفظ
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="fetchTasks()">
+                إلغاء
+            </button>
+        </div>
+    `;
+}
+
+async function saveTaskUpdate(taskId) {
+    const titleInput = document.getElementById(`edit-task-title-${taskId}`);
+    const dateInput = document.getElementById(`edit-task-date-${taskId}`);
+
+    const newTitle = titleInput ? titleInput.value.trim() : '';
+    const newDueDate = dateInput ? dateInput.value : null;
+
+    if (!newTitle) return alert('عنوان المهمة لا يمكن أن يكون فارغاً');
+    if (!newDueDate) return alert('برجاء اختيار تاريخ التنفيذ');
+
+    const { error } = await db.from('tasks').update({
+        title: newTitle,
+        due_date: newDueDate
+    }).eq('id', taskId);
+
+    if (error) {
+        alert('حدث خطأ أثناء تحديث المهمة: ' + error.message);
+    } else {
+        fetchTasks();
+    }
 }
 
 async function toggleCompleteTask(taskId, currentStatus) {
