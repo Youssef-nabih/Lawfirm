@@ -473,7 +473,13 @@ async function registerUser(event) {
     } catch (error) {
         console.error('Registration error:', error);
         message.style.color = '#dc2626';
-        message.innerText = error.message || 'تعذر إرسال طلب إنشاء المستخدم.';
+        const isEmailLimit =
+            error.code === 'over_email_send_rate_limit' ||
+            /email.*limit|rate.*limit/i.test(error.message || '');
+
+        message.innerText = isEmailLimit
+            ? 'تم الوصول لحد رسائل البريد في Supabase. لا تُعد المحاولة الآن؛ عطّل Confirm Email للتجربة أو أضف Custom SMTP من إعدادات Supabase.'
+            : (error.message || 'تعذر إرسال طلب إنشاء المستخدم.');
         message.style.display = 'block';
     } finally {
         button.disabled = false;
@@ -3776,6 +3782,7 @@ document.addEventListener(
 
                 if (currentUser) {
                     fetchTasks();
+                    loadAccessRequests();
                 }
 
             },
