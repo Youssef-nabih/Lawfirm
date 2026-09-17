@@ -694,27 +694,13 @@ async function reviewAccessRequest(requestId, userId, decision) {
         : 'هل تريد رفض هذا المستخدم؟';
     if (!confirm(confirmation)) return;
 
-    const { error: profileError } = await db
-        .from('profiles')
-        .update({ status: decision })
-        .eq('id', userId);
+    const { error } = await db.rpc('review_access_request', {
+        p_request_id: requestId,
+        p_decision: decision
+    });
 
-    if (profileError) {
-        alert('تعذر تحديث صلاحية المستخدم: ' + profileError.message);
-        return;
-    }
-
-    const { error: requestError } = await db
-        .from('access_requests')
-        .update({
-            status: decision,
-            reviewed_at: new Date().toISOString(),
-            reviewed_by: currentUser.id
-        })
-        .eq('id', requestId);
-
-    if (requestError) {
-        alert('تم تحديث المستخدم ولكن تعذر تحديث سجل الطلب: ' + requestError.message);
+    if (error) {
+        alert('تعذر تنفيذ قرار الموافقة: ' + error.message);
         return;
     }
 
