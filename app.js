@@ -453,7 +453,7 @@ async function registerUser(event) {
     button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري إرسال الطلب...';
 
     try {
-        const { error } = await db.auth.signUp({
+        const { data, error } = await db.auth.signUp({
             email,
             password,
             options: {
@@ -465,6 +465,26 @@ async function registerUser(event) {
         });
 
         if (error) throw error;
+
+        // With Confirm Email enabled Supabase may return an obfuscated user for
+        // an existing email. Never present that as a successfully sent request.
+        if (!data.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
+            throw new Error('هذا البريد الإلكتروني مسجّل بالفعل. استخدم بريدًا آخر أو سجّل الدخول.');
+        }
+
+        // The approval request must be written successfully before the user is
+        // told it reached the admin. This RPC is independent of the auth trigger.
+        if (!data.session) {
+            throw new Error('تم إنشاء الحساب لكن لم يمكن إرسال طلب الموافقة. عطّل Confirm Email في Supabase ثم أنشئ مستخدمًا جديدًا ببريد مختلف.');
+        }
+
+        const { error: requestError } = await db.rpc('create_my_access_request', {
+            p_username: username,
+            p_full_name: fullName,
+            p_email: email
+        });
+
+        if (requestError) throw requestError;
 
         document.getElementById('registrationForm').reset();
         message.style.color = '#15803d';
