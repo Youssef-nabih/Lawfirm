@@ -358,6 +358,7 @@
             <li><a href="#" onclick="switchPage('cases', this); return false;"><i class="fa-solid fa-briefcase"></i> إدارة القضايا</a></li>
             <li><a href="#" onclick="switchPage('tasks', this); return false;"><i class="fa-solid fa-list-check"></i> المهام والمواعيد</a></li>
             <li><a href="#" onclick="switchPage('clients', this); return false;"><i class="fa-solid fa-users"></i> إدارة الموكلين</a></li>
+            <li id="employeesMenuItem" hidden><a href="#" onclick="switchPage('employees', this); return false;"><i class="fa-solid fa-user-tie"></i> الموظفون</a></li>
         </ul>
     </div>
 
@@ -371,6 +372,22 @@
         </div>
 
         <div class="content">
+
+            <div id="employees" class="page-section" hidden>
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>الموظفون</h2>
+                        <button type="button" class="btn btn-primary" onclick="fetchEmployees()">تحديث القائمة</button>
+                    </div>
+                    <p style="margin-bottom:16px;">الموظفون المسجلون على النظام وحالة حساباتهم.</p>
+                    <div class="popup-table-scroll">
+                        <table>
+                            <thead><tr><th>اسم الموظف</th><th>اسم المستخدم</th><th>حالة الحساب</th></tr></thead>
+                            <tbody id="employeesTableBody" aria-live="polite"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
             <!-- الرئيسية -->
             <div id="dashboard" class="page-section active">

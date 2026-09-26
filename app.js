@@ -759,6 +759,8 @@ async function loadCurrentProfile(userId) {
 
 function updateUserInterface() {
 
+    updateEmployeesVisibility();
+
     if (!currentProfile) return;
 
     const userInfo =
@@ -1037,6 +1039,7 @@ async function logoutUser() {
 
     currentUser = null;
     currentProfile = null;
+    updateEmployeesVisibility();
 
     allCasesCache = [];
     allCompaniesCache = [];
@@ -1146,6 +1149,7 @@ function switchPage(
     pageId,
     element
 ) {
+    if (pageId === 'employees' && !requireAdmin()) return;
 
     document
         .querySelectorAll(
@@ -1185,6 +1189,8 @@ function switchPage(
             'active'
         );
     }
+    if (pageId === 'employees') fetchEmployees();
+
 }
 
 function switchOdooTab(
@@ -6085,6 +6091,51 @@ function startRealtime() {
             () => loadAccessRequests()
         )
         .subscribe();
+}
+
+let employeesRequestVersion = 0;
+
+function updateEmployeesVisibility() {
+    const allowed = Boolean(currentUser && isAdmin());
+    const menu = document.getElementById('employeesMenuItem');
+    const page = document.getElementById('employees');
+    if (menu) menu.hidden = !allowed;
+    if (page) page.hidden = !allowed;
+    if (!allowed) {
+        employeesRequestVersion++;
+        const body = document.getElementById('employeesTableBody');
+        if (body) body.replaceChildren();
+        if (page?.classList.contains('active')) {
+            switchPage('dashboard', document.querySelector('.sidebar a'));
+        }
+    }
+}
+
+async function fetchEmployees() {
+    if (!currentUser || !isAdmin()) {
+        updateEmployeesVisibility();
+        return;
+    }
+    const body = document.getElementById('employeesTableBody');
+    if (!body) return;
+    const version = ++employeesRequestVersion;
+    const userId = currentUser.id;
+    body.innerHTML = '<tr><td colspan="3">جاري تحميل الموظفين...</td></tr>';
+    try {
+        const { data, error } = await db.rpc('list_registered_employees');
+        if (version !== employeesRequestVersion || currentUser?.id !== userId || !isAdmin()) return;
+        if (error) throw error;
+        const statuses = { approved: 'مقبول', pending: 'في انتظار الموافقة', rejected: 'مرفوض' };
+        body.innerHTML = (data || []).map(employee => `<tr>
+            <td>${escapeHtml(employee.full_name || '—')}</td>
+            <td>${escapeHtml(employee.username || '—')}</td>
+            <td>${escapeHtml(statuses[employee.status] || employee.status || 'غير محدد')}</td>
+        </tr>`).join('') || '<tr><td colspan="3">لا يوجد موظفون مسجلون حالياً.</td></tr>';
+    } catch (error) {
+        if (version !== employeesRequestVersion || currentUser?.id !== userId || !isAdmin()) return;
+        console.error('Error loading employees:', error);
+        body.innerHTML = '<tr><td colspan="3">تعذر تحميل الموظفين. تأكد من إعداد صلاحية عرض الموظفين في قاعدة البيانات ثم اضغط تحديث القائمة.</td></tr>';
+    }
 }
 
 async function loadAllData() {
