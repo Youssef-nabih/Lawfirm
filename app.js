@@ -5,16 +5,12 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allCasesCache = [];
 let allCompaniesCache = [];
+let allClientsCache = [];
 
 let currentUser = null;
 let currentProfile = null;
 let realtimeStarted = false;
 let profileLoadError = '';
-
-
-// =========================================
-// AUTH SYSTEM
-// =========================================
 
 function isAdmin() {
     return currentProfile && currentProfile.role === 'admin';
@@ -43,21 +39,12 @@ function requireAdmin() {
     return true;
 }
 
-
-// =========================================
-// إنشاء شاشة تسجيل الدخول تلقائياً
-// =========================================
-
 function createLoginScreen() {
 
-    // The page already contains the login markup.  Only create it when this
-    // script is used on a page that does not.  In both cases, bind the form
-    // once so clicking the button and pressing Enter follow the same path.
     const existingLoginScreen = document.getElementById('loginScreen');
 
     if (existingLoginScreen) {
         bindAuthScreenHandlers(existingLoginScreen);
-
         return;
     }
 
@@ -176,10 +163,100 @@ function createLoginScreen() {
         .logout-button {
             margin-right: 15px;
         }
+
+        .details-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            z-index: 99990;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .details-modal {
+            background: #fff;
+            width: min(1100px, 100%);
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 14px;
+            padding: 24px;
+            direction: rtl;
+            box-shadow: 0 20px 60px rgba(0,0,0,.25);
+        }
+
+        .details-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .details-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .details-item label {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .details-item strong {
+            color: #0f172a;
+            word-break: break-word;
+        }
+
+        .details-notes {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .details-table th,
+        .details-table td {
+            border: 1px solid #e2e8f0;
+            padding: 9px;
+            text-align: right;
+            vertical-align: top;
+        }
+
+        .details-table th {
+            background: #f8fafc;
+        }
+
+        .details-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
     `;
 
     document.head.appendChild(style);
-
 
     const loginScreen = document.createElement('div');
 
@@ -242,33 +319,48 @@ function createLoginScreen() {
 
     document.body.appendChild(loginScreen);
 
-
     bindAuthScreenHandlers(loginScreen);
 }
 
 function bindAuthScreenHandlers(container = document) {
-    const loginForm = container.querySelector('#loginForm');
-    const registrationForm = container.querySelector('#registrationForm');
 
-    if (loginForm && !loginForm.dataset.loginHandlerBound) {
-        loginForm.addEventListener('submit', loginUser);
-        loginForm.dataset.loginHandlerBound = 'true';
+    const loginForm =
+        container.querySelector('#loginForm');
+
+    const registrationForm =
+        container.querySelector('#registrationForm');
+
+    if (
+        loginForm &&
+        !loginForm.dataset.loginHandlerBound
+    ) {
+        loginForm.addEventListener(
+            'submit',
+            loginUser
+        );
+
+        loginForm.dataset.loginHandlerBound =
+            'true';
     }
 
-    if (registrationForm && !registrationForm.dataset.registrationHandlerBound) {
-        registrationForm.addEventListener('submit', registerUser);
-        registrationForm.dataset.registrationHandlerBound = 'true';
+    if (
+        registrationForm &&
+        !registrationForm.dataset.registrationHandlerBound
+    ) {
+        registrationForm.addEventListener(
+            'submit',
+            registerUser
+        );
+
+        registrationForm.dataset.registrationHandlerBound =
+            'true';
     }
 }
 
-
-// =========================================
-// إظهار / إخفاء Login
-// =========================================
-
 function showLoginScreen() {
 
-    const loginScreen = document.getElementById('loginScreen');
+    const loginScreen =
+        document.getElementById('loginScreen');
 
     if (loginScreen) {
         loginScreen.style.display = 'flex';
@@ -277,10 +369,10 @@ function showLoginScreen() {
     document.body.style.overflow = 'hidden';
 }
 
-
 function hideLoginScreen() {
 
-    const loginScreen = document.getElementById('loginScreen');
+    const loginScreen =
+        document.getElementById('loginScreen');
 
     if (loginScreen) {
         loginScreen.style.display = 'none';
@@ -289,34 +381,45 @@ function hideLoginScreen() {
     document.body.style.overflow = '';
 }
 
-
-// =========================================
-// تسجيل الدخول
-// =========================================
-
 async function loginUser(event) {
 
-    // Keep this safe when called from an inline handler as well as a form.
     if (event) event.preventDefault();
 
-    const usernameInput = document.getElementById('loginUsername');
-    const passwordInput = document.getElementById('loginPassword');
-    const loginButton = document.getElementById('loginButton');
-    const loginError = document.getElementById('loginError');
+    const usernameInput =
+        document.getElementById('loginUsername');
 
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value;
+    const passwordInput =
+        document.getElementById('loginPassword');
+
+    const loginButton =
+        document.getElementById('loginButton');
+
+    const loginError =
+        document.getElementById('loginError');
+
+    const username =
+        usernameInput.value.trim();
+
+    const password =
+        passwordInput.value;
 
     loginError.style.display = 'none';
 
     if (!username || !password) {
-        loginError.innerText = 'برجاء إدخال اسم المستخدم وكلمة المرور.';
-        loginError.style.display = 'block';
+
+        loginError.innerText =
+            'برجاء إدخال اسم المستخدم وكلمة المرور.';
+
+        loginError.style.display =
+            'block';
+
         return;
     }
 
     if (!loginButton) {
-        throw new Error('تعذر تجهيز زر تسجيل الدخول. حدّث الصفحة وحاول مرة أخرى.');
+        throw new Error(
+            'تعذر تجهيز زر تسجيل الدخول. حدّث الصفحة وحاول مرة أخرى.'
+        );
     }
 
     loginButton.disabled = true;
@@ -326,54 +429,66 @@ async function loginUser(event) {
         جاري تسجيل الدخول...
     `;
 
-
     try {
 
-        // الحصول على Email الخاص بالـUsername
-        const { data: email, error: emailError } =
-            await db.rpc('get_login_email', {
-                p_username: username
-            });
-
+        const {
+            data: email,
+            error: emailError
+        } =
+            await db.rpc(
+                'get_login_email',
+                {
+                    p_username: username
+                }
+            );
 
         if (emailError) {
 
-            console.error('Login email error:', emailError);
+            console.error(
+                'Login email error:',
+                emailError
+            );
 
             throw new Error(
                 'تأكد من تشغيل SQL الخاص بنظام تسجيل الدخول في Supabase.'
             );
         }
 
-
         if (!email) {
-            throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة.');
+
+            throw new Error(
+                'اسم المستخدم أو كلمة المرور غير صحيحة.'
+            );
         }
 
-
-        // تسجيل الدخول في Supabase Auth
-        const { data, error } =
+        const {
+            data,
+            error
+        } =
             await db.auth.signInWithPassword({
                 email: email,
                 password: password
             });
 
-
         if (error) {
 
-            console.error('Supabase login error:', error);
+            console.error(
+                'Supabase login error:',
+                error
+            );
 
-            throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة.');
+            throw new Error(
+                'اسم المستخدم أو كلمة المرور غير صحيحة.'
+            );
         }
 
+        currentUser =
+            data.user;
 
-        currentUser = data.user;
-
-
-        // تحميل Profile
         const profileLoaded =
-            await loadCurrentProfile(currentUser.id);
-
+            await loadCurrentProfile(
+                currentUser.id
+            );
 
         if (!profileLoaded) {
 
@@ -382,10 +497,10 @@ async function loginUser(event) {
             currentUser = null;
 
             throw new Error(
-                profileLoadError || 'الحساب موجود ولكن بيانات المستخدم غير مكتملة.'
+                profileLoadError ||
+                'الحساب موجود ولكن بيانات المستخدم غير مكتملة.'
             );
         }
-
 
         updateUserInterface();
 
@@ -395,7 +510,6 @@ async function loginUser(event) {
 
         startRealtime();
 
-
         usernameInput.value = '';
         passwordInput.value = '';
 
@@ -404,9 +518,11 @@ async function loginUser(event) {
         console.error(error);
 
         loginError.innerText =
-            error.message || 'حدث خطأ أثناء تسجيل الدخول.';
+            error.message ||
+            'حدث خطأ أثناء تسجيل الدخول.';
 
-        loginError.style.display = 'block';
+        loginError.style.display =
+            'block';
 
     } finally {
 
@@ -420,170 +536,290 @@ async function loginUser(event) {
 }
 
 function showRegistrationForm() {
-    document.getElementById('loginForm')?.setAttribute('hidden', '');
-    document.getElementById('registrationForm')?.removeAttribute('hidden');
-    document.getElementById('loginError').style.display = 'none';
+
+    document
+        .getElementById('loginForm')
+        ?.setAttribute('hidden', '');
+
+    document
+        .getElementById('registrationForm')
+        ?.removeAttribute('hidden');
+
+    document
+        .getElementById('loginError')
+        .style.display = 'none';
 }
 
 function showLoginForm() {
-    document.getElementById('registrationForm')?.setAttribute('hidden', '');
-    document.getElementById('loginForm')?.removeAttribute('hidden');
-    document.getElementById('registrationMessage').style.display = 'none';
+
+    document
+        .getElementById('registrationForm')
+        ?.setAttribute('hidden', '');
+
+    document
+        .getElementById('loginForm')
+        ?.removeAttribute('hidden');
+
+    document
+        .getElementById('registrationMessage')
+        .style.display = 'none';
 }
 
 async function registerUser(event) {
+
     event.preventDefault();
 
-    const fullName = document.getElementById('registrationFullName').value.trim();
-    const username = document.getElementById('registrationUsername').value.trim();
-    const email = document.getElementById('registrationEmail').value.trim();
-    const password = document.getElementById('registrationPassword').value;
-    const button = document.getElementById('registrationButton');
-    const message = document.getElementById('registrationMessage');
+    const fullName =
+        document
+            .getElementById(
+                'registrationFullName'
+            )
+            .value
+            .trim();
+
+    const username =
+        document
+            .getElementById(
+                'registrationUsername'
+            )
+            .value
+            .trim();
+
+    const email =
+        document
+            .getElementById(
+                'registrationEmail'
+            )
+            .value
+            .trim();
+
+    const password =
+        document
+            .getElementById(
+                'registrationPassword'
+            )
+            .value;
+
+    const button =
+        document.getElementById(
+            'registrationButton'
+        );
+
+    const message =
+        document.getElementById(
+            'registrationMessage'
+        );
 
     message.style.display = 'none';
 
-    if (!fullName || !username || !email || password.length < 8) {
-        message.innerText = 'يرجى إدخال كل البيانات واستخدام كلمة مرور من 8 أحرف على الأقل.';
-        message.style.display = 'block';
+    if (
+        !fullName ||
+        !username ||
+        !email ||
+        password.length < 8
+    ) {
+
+        message.innerText =
+            'يرجى إدخال كل البيانات واستخدام كلمة مرور من 8 أحرف على الأقل.';
+
+        message.style.display =
+            'block';
+
         return;
     }
 
     button.disabled = true;
-    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري إرسال الطلب...';
+
+    button.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> جاري إرسال الطلب...';
 
     try {
-        const { data, error } = await db.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    username,
-                    full_name: fullName
+
+        const {
+            data,
+            error
+        } =
+            await db.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        username,
+                        full_name: fullName
+                    }
                 }
-            }
-        });
+            });
 
         if (error) throw error;
 
-        // With Confirm Email enabled Supabase may return an obfuscated user for
-        // an existing email. Never present that as a successfully sent request.
-        if (!data.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
-            throw new Error('هذا البريد الإلكتروني مسجّل بالفعل. استخدم بريدًا آخر أو سجّل الدخول.');
+        if (
+            !data.user ||
+            (
+                Array.isArray(data.user.identities) &&
+                data.user.identities.length === 0
+            )
+        ) {
+
+            throw new Error(
+                'هذا البريد الإلكتروني مسجّل بالفعل. استخدم بريدًا آخر أو سجّل الدخول.'
+            );
         }
 
-        // The approval request must be written successfully before the user is
-        // told it reached the admin. This RPC is independent of the auth trigger.
         if (!data.session) {
-            throw new Error('تم إنشاء الحساب لكن لم يمكن إرسال طلب الموافقة. عطّل Confirm Email في Supabase ثم أنشئ مستخدمًا جديدًا ببريد مختلف.');
+
+            throw new Error(
+                'تم إنشاء الحساب لكن لم يمكن إرسال طلب الموافقة. عطّل Confirm Email في Supabase ثم أنشئ مستخدمًا جديدًا ببريد مختلف.'
+            );
         }
 
-        const { error: requestError } = await db.rpc('create_my_access_request', {
-            p_username: username,
-            p_full_name: fullName,
-            p_email: email
-        });
+        const {
+            error: requestError
+        } =
+            await db.rpc(
+                'create_my_access_request',
+                {
+                    p_username: username,
+                    p_full_name: fullName,
+                    p_email: email
+                }
+            );
 
-        if (requestError) throw requestError;
+        if (requestError) {
+            throw requestError;
+        }
 
-        document.getElementById('registrationForm').reset();
-        message.style.color = '#15803d';
-        message.innerText = 'تم إرسال طلبك بنجاح. انتظر موافقة الأدمن قبل تسجيل الدخول.';
-        message.style.display = 'block';
+        document
+            .getElementById('registrationForm')
+            .reset();
+
+        message.style.color =
+            '#15803d';
+
+        message.innerText =
+            'تم إرسال طلبك بنجاح. انتظر موافقة الأدمن قبل تسجيل الدخول.';
+
+        message.style.display =
+            'block';
+
     } catch (error) {
-        console.error('Registration error:', error);
-        message.style.color = '#dc2626';
+
+        console.error(
+            'Registration error:',
+            error
+        );
+
+        message.style.color =
+            '#dc2626';
+
         const isEmailLimit =
             error.code === 'over_email_send_rate_limit' ||
-            /email.*limit|rate.*limit/i.test(error.message || '');
+            /email.*limit|rate.*limit/i.test(
+                error.message || ''
+            );
 
-        message.innerText = isEmailLimit
-            ? 'تم الوصول لحد رسائل البريد في Supabase. لا تُعد المحاولة الآن؛ عطّل Confirm Email للتجربة أو أضف Custom SMTP من إعدادات Supabase.'
-            : (error.message || 'تعذر إرسال طلب إنشاء المستخدم.');
-        message.style.display = 'block';
+        message.innerText =
+            isEmailLimit
+                ? 'تم الوصول لحد رسائل البريد في Supabase. لا تُعد المحاولة الآن؛ عطّل Confirm Email للتجربة أو أضف Custom SMTP من إعدادات Supabase.'
+                : (
+                    error.message ||
+                    'تعذر إرسال طلب إنشاء المستخدم.'
+                );
+
+        message.style.display =
+            'block';
+
     } finally {
+
         button.disabled = false;
-        button.innerHTML = '<i class="fa-solid fa-user-plus"></i> إرسال طلب الانضمام';
+
+        button.innerHTML =
+            '<i class="fa-solid fa-user-plus"></i> إرسال طلب الانضمام';
     }
 }
-
-
-// =========================================
-// تحميل بيانات المستخدم
-// =========================================
 
 async function loadCurrentProfile(userId) {
 
     profileLoadError = '';
 
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await db
             .from('profiles')
-            .select('username, full_name, role, status')
+            .select(
+                'username, full_name, role, status'
+            )
             .eq('id', userId)
             .maybeSingle();
 
-
     if (error) {
 
-        console.error('Profile error:', error.message);
-        profileLoadError = 'تعذر التحقق من صلاحية الحساب. تأكد من تشغيل إعدادات Supabase.';
+        console.error(
+            'Profile error:',
+            error.message
+        );
+
+        profileLoadError =
+            'تعذر التحقق من صلاحية الحساب. تأكد من تشغيل إعدادات Supabase.';
 
         return false;
     }
-
 
     if (!data) {
 
-        console.error('No profile found.');
-        profileLoadError = 'الحساب موجود ولكن بيانات المستخدم غير مكتملة.';
+        console.error(
+            'No profile found.'
+        );
+
+        profileLoadError =
+            'الحساب موجود ولكن بيانات المستخدم غير مكتملة.';
 
         return false;
     }
-
 
     currentProfile = data;
 
     if (currentProfile.status !== 'approved') {
-        profileLoadError = currentProfile.status === 'rejected'
-            ? 'تم رفض طلب الانضمام. تواصل مع الأدمن لمزيد من التفاصيل.'
-            : 'طلب الانضمام قيد انتظار موافقة الأدمن.';
-        console.warn(profileLoadError);
+
+        profileLoadError =
+            currentProfile.status === 'rejected'
+                ? 'تم رفض طلب الانضمام. تواصل مع الأدمن لمزيد من التفاصيل.'
+                : 'طلب الانضمام قيد انتظار موافقة الأدمن.';
+
+        console.warn(
+            profileLoadError
+        );
+
         currentProfile = null;
+
         return false;
     }
 
     return true;
 }
 
-
-// =========================================
-// تحديث Header
-// =========================================
-
 function updateUserInterface() {
 
     if (!currentProfile) return;
 
-
     const userInfo =
-        document.querySelector('.header .user-info');
-
+        document.querySelector(
+            '.header .user-info'
+        );
 
     if (!userInfo) return;
-
 
     const displayName =
         currentProfile.full_name ||
         currentProfile.username;
-
 
     userInfo.innerHTML = `
 
         <i class="fa-solid fa-circle-user fa-lg"></i>
 
         <span>
-            مرحباً، ${displayName}
+            مرحباً، ${escapeHtml(displayName)}
         </span>
 
         <span class="role-badge ${
@@ -600,14 +836,13 @@ function updateUserInterface() {
 
     `;
 
-
-    // إضافة Logout button
     if (!document.getElementById('logoutButton')) {
 
         const logoutButton =
             document.createElement('button');
 
-        logoutButton.id = 'logoutButton';
+        logoutButton.id =
+            'logoutButton';
 
         logoutButton.className =
             'btn btn-danger logout-button';
@@ -617,90 +852,204 @@ function updateUserInterface() {
             تسجيل الخروج
         `;
 
-        logoutButton.onclick = logoutUser;
-
+        logoutButton.onclick =
+            logoutUser;
 
         const header =
-            document.querySelector('.header');
+            document.querySelector(
+                '.header'
+            );
 
         if (header) {
-            header.appendChild(logoutButton);
+            header.appendChild(
+                logoutButton
+            );
         }
     }
 }
 
-
-// =========================================
-// تسجيل الخروج
-// =========================================
-
 function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, char => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-    }[char]));
+
+    return String(value ?? '')
+        .replace(
+            /[&<>'"]/g,
+            char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[char])
+        );
 }
 
 async function loadAccessRequests() {
-    const panel = document.getElementById('accessRequestsPanel');
-    const list = document.getElementById('accessRequestsList');
+
+    const panel =
+        document.getElementById(
+            'accessRequestsPanel'
+        );
+
+    const list =
+        document.getElementById(
+            'accessRequestsList'
+        );
 
     if (!panel || !list) return;
+
     if (!isAdmin()) {
-        panel.style.display = 'none';
+
+        panel.style.display =
+            'none';
+
         return;
     }
 
-    const { data, error } = await db
-        .from('access_requests')
-        .select('id, user_id, username, full_name, email, created_at')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+    const {
+        data,
+        error
+    } =
+        await db
+            .from('access_requests')
+            .select(
+                'id, user_id, username, full_name, email, created_at'
+            )
+            .eq('status', 'pending')
+            .order(
+                'created_at',
+                {
+                    ascending: false
+                }
+            );
 
-    panel.style.display = 'block';
+    panel.style.display =
+        'block';
 
     if (error) {
-        console.error('Access requests error:', error.message);
-        list.innerHTML = '<p style="color:#dc2626;">تعذر تحميل الطلبات. شغّل ملف إعداد Supabase أولاً.</p>';
+
+        console.error(
+            'Access requests error:',
+            error.message
+        );
+
+        list.innerHTML =
+            '<p style="color:#dc2626;">تعذر تحميل الطلبات. شغّل ملف إعداد Supabase أولاً.</p>';
+
         return;
     }
 
     if (!data?.length) {
-        list.innerHTML = '<p style="color:#64748b;">لا توجد طلبات جديدة حالياً.</p>';
+
+        list.innerHTML =
+            '<p style="color:#64748b;">لا توجد طلبات جديدة حالياً.</p>';
+
         return;
     }
 
     list.innerHTML = `
         <table>
-            <thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>البريد</th><th>وقت الطلب</th><th>الإجراء</th></tr></thead>
-            <tbody>${data.map(request => `
+            <thead>
                 <tr>
-                    <td>${escapeHtml(request.full_name)}</td>
-                    <td>${escapeHtml(request.username)}</td>
-                    <td>${escapeHtml(request.email)}</td>
-                    <td>${new Date(request.created_at).toLocaleString('ar-EG')}</td>
-                    <td>
-                        <button class="btn btn-sm btn-success" onclick="reviewAccessRequest('${request.id}', '${request.user_id}', 'approved')">موافقة</button>
-                        <button class="btn btn-sm btn-danger" onclick="reviewAccessRequest('${request.id}', '${request.user_id}', 'rejected')">رفض</button>
-                    </td>
-                </tr>`).join('')}</tbody>
-        </table>`;
+                    <th>الاسم</th>
+                    <th>اسم المستخدم</th>
+                    <th>البريد</th>
+                    <th>وقت الطلب</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                ${data.map(request => `
+
+                    <tr>
+
+                        <td>
+                            ${escapeHtml(request.full_name)}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(request.username)}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(request.email)}
+                        </td>
+
+                        <td>
+                            ${new Date(
+                                request.created_at
+                            ).toLocaleString('ar-EG')}
+                        </td>
+
+                        <td>
+
+                            <button
+                                class="btn btn-sm btn-success"
+                                onclick="reviewAccessRequest(
+                                    '${request.id}',
+                                    '${request.user_id}',
+                                    'approved'
+                                )"
+                            >
+                                موافقة
+                            </button>
+
+                            <button
+                                class="btn btn-sm btn-danger"
+                                onclick="reviewAccessRequest(
+                                    '${request.id}',
+                                    '${request.user_id}',
+                                    'rejected'
+                                )"
+                            >
+                                رفض
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `).join('')}
+
+            </tbody>
+        </table>
+    `;
 }
 
-async function reviewAccessRequest(requestId, userId, decision) {
+async function reviewAccessRequest(
+    requestId,
+    userId,
+    decision
+) {
+
     if (!requireAdmin()) return;
 
-    const confirmation = decision === 'approved'
-        ? 'هل تريد الموافقة على هذا المستخدم؟'
-        : 'هل تريد رفض هذا المستخدم؟';
+    const confirmation =
+        decision === 'approved'
+            ? 'هل تريد الموافقة على هذا المستخدم؟'
+            : 'هل تريد رفض هذا المستخدم؟';
+
     if (!confirm(confirmation)) return;
 
-    const { error } = await db.rpc('review_access_request', {
-        p_request_id: requestId,
-        p_decision: decision
-    });
+    const {
+        error
+    } =
+        await db.rpc(
+            'review_access_request',
+            {
+                p_request_id: requestId,
+                p_decision: decision
+            }
+        );
 
     if (error) {
-        alert('تعذر تنفيذ قرار الموافقة: ' + error.message);
+
+        alert(
+            'تعذر تنفيذ قرار الموافقة: ' +
+            error.message
+        );
+
         return;
     }
 
@@ -713,9 +1062,10 @@ async function logoutUser() {
         return;
     }
 
-
-    const { error } = await db.auth.signOut();
-
+    const {
+        error
+    } =
+        await db.auth.signOut();
 
     if (error) {
 
@@ -727,29 +1077,24 @@ async function logoutUser() {
         return;
     }
 
-
     currentUser = null;
     currentProfile = null;
 
     allCasesCache = [];
     allCompaniesCache = [];
-
+    allClientsCache = [];
 
     const logoutButton =
-        document.getElementById('logoutButton');
+        document.getElementById(
+            'logoutButton'
+        );
 
     if (logoutButton) {
         logoutButton.remove();
     }
 
-
     showLoginScreen();
 }
-
-
-// =========================================
-// رفع الملفات
-// =========================================
 
 async function uploadFileToSupabase(
     fileInputOrSource,
@@ -758,14 +1103,14 @@ async function uploadFileToSupabase(
 
     if (!requireLogin()) return null;
 
-
     let file = null;
-
 
     if (typeof fileInputOrSource === 'string') {
 
         const fileInput =
-            document.getElementById(fileInputOrSource);
+            document.getElementById(
+                fileInputOrSource
+            );
 
         if (
             fileInput &&
@@ -775,14 +1120,14 @@ async function uploadFileToSupabase(
             file = fileInput.files[0];
         }
 
-    } else if (fileInputOrSource instanceof File) {
+    } else if (
+        fileInputOrSource instanceof File
+    ) {
 
         file = fileInputOrSource;
     }
 
-
     if (!file) return null;
-
 
     const safeFileName =
         file.name.replace(
@@ -790,25 +1135,27 @@ async function uploadFileToSupabase(
             '_'
         );
 
-
     const fileExt =
         safeFileName.split('.').pop();
-
 
     const fileName =
         `${Date.now()}_${Math.random()
             .toString(36)
             .substring(2, 7)}.${fileExt}`;
 
+    const filePath =
+        fileName;
 
-    const filePath = fileName;
-
-
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await db.storage
             .from(bucketName)
-            .upload(filePath, file);
-
+            .upload(
+                filePath,
+                file
+            );
 
     if (error) {
 
@@ -825,104 +1172,133 @@ async function uploadFileToSupabase(
         return null;
     }
 
-
-    const { data: publicUrlData } =
+    const {
+        data: publicUrlData
+    } =
         db.storage
             .from(bucketName)
-            .getPublicUrl(filePath);
-
+            .getPublicUrl(
+                filePath
+            );
 
     return publicUrlData.publicUrl;
 }
 
-
-// =========================================
-// التنقل
-// =========================================
-
-function switchPage(pageId, element) {
+function switchPage(
+    pageId,
+    element
+) {
 
     document
-        .querySelectorAll('.page-section')
-        .forEach(sec =>
-            sec.classList.remove('active')
+        .querySelectorAll(
+            '.page-section'
+        )
+        .forEach(
+            sec =>
+                sec.classList.remove(
+                    'active'
+                )
         );
-
 
     document
-        .querySelectorAll('.sidebar .menu li a')
-        .forEach(a =>
-            a.classList.remove('active')
+        .querySelectorAll(
+            '.sidebar .menu li a'
+        )
+        .forEach(
+            a =>
+                a.classList.remove(
+                    'active'
+                )
         );
-
 
     const targetPage =
-        document.getElementById(pageId);
-
+        document.getElementById(
+            pageId
+        );
 
     if (targetPage) {
-        targetPage.classList.add('active');
+        targetPage.classList.add(
+            'active'
+        );
     }
 
-
     if (element) {
-        element.classList.add('active');
+        element.classList.add(
+            'active'
+        );
     }
 }
 
-
-// =========================================
-// Tabs
-// =========================================
-
-function switchOdooTab(tabId, btn) {
+function switchOdooTab(
+    tabId,
+    btn
+) {
 
     const parentPanel =
         btn.closest('.panel');
 
-
     if (parentPanel) {
 
         parentPanel
-            .querySelectorAll('.tab-content')
-            .forEach(tc =>
-                tc.classList.remove('active')
+            .querySelectorAll(
+                '.tab-content'
+            )
+            .forEach(
+                tc =>
+                    tc.classList.remove(
+                        'active'
+                    )
             );
-
 
         parentPanel
-            .querySelectorAll('.odoo-tab-btn')
-            .forEach(b =>
-                b.classList.remove('active')
+            .querySelectorAll(
+                '.odoo-tab-btn'
+            )
+            .forEach(
+                b =>
+                    b.classList.remove(
+                        'active'
+                    )
             );
     }
 
-
     const targetTab =
-        document.getElementById(tabId);
-
+        document.getElementById(
+            tabId
+        );
 
     if (targetTab) {
-        targetTab.classList.add('active');
+        targetTab.classList.add(
+            'active'
+        );
     }
-
 
     if (btn) {
-        btn.classList.add('active');
+        btn.classList.add(
+            'active'
+        );
     }
 }
 
+function switchCompanyTab(
+    tabId,
+    btn
+) {
 
-function switchCompanyTab(tabId, btn) {
-    switchOdooTab(tabId, btn);
+    switchOdooTab(
+        tabId,
+        btn
+    );
 }
 
-
-function toggleParentCompanySelect(selectElem) {
+function toggleParentCompanySelect(
+    selectElem
+) {
 
     const group =
-        document.getElementById('parentCompanyGroup');
-
+        document.getElementById(
+            'parentCompanyGroup'
+        );
 
     if (group) {
 
@@ -933,24 +1309,23 @@ function toggleParentCompanySelect(selectElem) {
     }
 }
 
-
-// =========================================
-// COMPANIES
-// =========================================
-
 async function fetchCompanies() {
 
     if (!currentUser) return;
 
-
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await db
             .from('companies')
             .select('*')
-            .order('id', {
-                ascending: false
-            });
-
+            .order(
+                'id',
+                {
+                    ascending: false
+                }
+            );
 
     if (error) {
 
@@ -962,31 +1337,28 @@ async function fetchCompanies() {
         return;
     }
 
-
-    allCompaniesCache = data || [];
-
+    allCompaniesCache =
+        data || [];
 
     renderCompaniesTable(
         allCompaniesCache
     );
-
 
     updateCompaniesStats();
 
     populateParentCompanyDropdown();
 }
 
-
-function renderCompaniesTable(companiesData) {
+function renderCompaniesTable(
+    companiesData
+) {
 
     const tbody =
         document.getElementById(
             'companiesTableBody'
         );
 
-
     if (!tbody) return;
-
 
     if (
         !companiesData ||
@@ -999,121 +1371,164 @@ function renderCompaniesTable(companiesData) {
         return;
     }
 
-
     tbody.innerHTML =
-        companiesData.map(c => {
+        companiesData
+            .map(c => {
 
-            let statusBadge =
-                '<span class="badge badge-active">نشطة</span>';
+                let statusBadge =
+                    '<span class="badge badge-active">نشطة</span>';
 
+                if (c.status === 'pending') {
 
-            if (c.status === 'pending') {
+                    statusBadge =
+                        '<span class="badge badge-pending">قيد الانتظار</span>';
+                }
 
-                statusBadge =
-                    '<span class="badge badge-pending">قيد الانتظار</span>';
-            }
+                if (c.status === 'suspended') {
 
+                    statusBadge =
+                        '<span class="badge badge-suspended">معلقة</span>';
+                }
 
-            if (c.status === 'suspended') {
+                const logoHtml =
+                    c.logo_url
+                        ? `
+                            <a
+                                href="${c.logo_url}"
+                                target="_blank"
+                            >
+                                <img
+                                    src="${c.logo_url}"
+                                    class="company-logo-preview"
+                                    alt="logo"
+                                >
+                            </a>
+                          `
+                        : `
+                            <div
+                                style="
+                                    width:40px;
+                                    height:40px;
+                                    background:#e2e8f0;
+                                    border-radius:6px;
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    color:#64748b;
+                                "
+                            >
+                                <i class="fa-solid fa-building"></i>
+                            </div>
+                          `;
 
-                statusBadge =
-                    '<span class="badge badge-suspended">معلقة</span>';
-            }
+                const adminActions =
+                    isAdmin()
+                        ? `
+                            <button
+                                class="btn btn-sm btn-warning"
+                                onclick="openEditCompanyModal(${c.id})"
+                            >
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
 
+                            <button
+                                class="btn btn-sm btn-danger"
+                                onclick="deleteCompany(${c.id})"
+                            >
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                          `
+                        : `
+                            <span class="badge badge-done">
+                                عرض فقط
+                            </span>
+                          `;
 
-            const logoHtml =
-                c.logo_url
-                    ? `<a href="${c.logo_url}" target="_blank">
-                        <img src="${c.logo_url}" class="company-logo-preview" alt="logo">
-                       </a>`
-                    : `<div style="width:40px;height:40px;background:#e2e8f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;">
-                        <i class="fa-solid fa-building"></i>
-                       </div>`;
+                return `
+                    <tr>
 
+                        <td>
+                            ${logoHtml}
+                        </td>
 
-            const adminActions =
-                isAdmin()
-                    ? `
-                        <button class="btn btn-sm btn-warning"
-                            onclick="openEditCompanyModal(${c.id})">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
+                        <td>
+                            <b>
+                                ${escapeHtml(c.name || '')}
+                            </b>
 
-                        <button class="btn btn-sm btn-danger"
-                            onclick="deleteCompany(${c.id})">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    `
-                    : `
-                        <span class="badge badge-done">
-                            عرض فقط
-                        </span>
-                    `;
+                            ${
+                                c.legal_name
+                                    ? `
+                                        <br>
+                                        <small style="color:#64748b;">
+                                            ${escapeHtml(c.legal_name)}
+                                        </small>
+                                      `
+                                    : ''
+                            }
+                        </td>
 
+                        <td>
+                            ${escapeHtml(c.tax_id || 'غير مسجل')}
+                        </td>
 
-            return `
-                <tr>
+                        <td>
+                            ${escapeHtml(c.industry || '-')}
+                        </td>
 
-                    <td>${logoHtml}</td>
+                        <td>
 
-                    <td>
-                        <b>${c.name || ''}</b>
-                        ${
-                            c.legal_name
-                                ? `<br>
-                                   <small style="color:#64748b;">
-                                   ${c.legal_name}
-                                   </small>`
-                                : ''
-                        }
-                    </td>
+                            <div>
+                                <i
+                                    class="fa-solid fa-envelope"
+                                    style="
+                                        font-size:0.75rem;
+                                        color:#0284c7;
+                                    "
+                                ></i>
 
-                    <td>
-                        ${c.tax_id || 'غير مسجل'}
-                    </td>
+                                ${escapeHtml(c.email || '-')}
+                            </div>
 
-                    <td>
-                        ${c.industry || '-'}
-                    </td>
+                            ${
+                                c.phone
+                                    ? `
+                                        <div>
+                                            <i
+                                                class="fa-solid fa-phone"
+                                                style="
+                                                    font-size:0.75rem;
+                                                    color:#16a34a;
+                                                "
+                                            ></i>
 
-                    <td>
-                        <div>
-                            <i class="fa-solid fa-envelope"
-                               style="font-size:0.75rem;color:#0284c7;">
-                            </i>
-                            ${c.email || '-'}
-                        </div>
+                                            ${escapeHtml(c.phone)}
+                                        </div>
+                                      `
+                                    : ''
+                            }
 
-                        ${
-                            c.phone
-                                ? `<div>
-                                    <i class="fa-solid fa-phone"
-                                       style="font-size:0.75rem;color:#16a34a;">
-                                    </i>
-                                    ${c.phone}
-                                   </div>`
-                                : ''
-                        }
-                    </td>
+                        </td>
 
-                    <td>
-                        <b>${c.currency || 'EGP'}</b>
-                    </td>
+                        <td>
+                            <b>
+                                ${escapeHtml(c.currency || 'EGP')}
+                            </b>
+                        </td>
 
-                    <td>
-                        ${statusBadge}
-                    </td>
+                        <td>
+                            ${statusBadge}
+                        </td>
 
-                    <td>
-                        ${adminActions}
-                    </td>
+                        <td>
+                            ${adminActions}
+                        </td>
 
-                </tr>
-            `;
-
-        }).join('');
+                    </tr>
+                `;
+            })
+            .join('');
 }
-
 
 function updateCompaniesStats() {
 
@@ -1122,18 +1537,15 @@ function updateCompaniesStats() {
             'stat-companies-count'
         );
 
-
     const activeStat =
         document.getElementById(
             'stat-active-companies-count'
         );
 
-
     if (totalStat) {
         totalStat.innerText =
             allCompaniesCache.length;
     }
-
 
     if (activeStat) {
 
@@ -1144,12 +1556,10 @@ function updateCompaniesStats() {
                     !c.status
             ).length;
 
-
         activeStat.innerText =
             activeCount;
     }
 }
-
 
 function populateParentCompanyDropdown() {
 
@@ -1158,125 +1568,145 @@ function populateParentCompanyDropdown() {
             'compParentId'
         );
 
-
     if (!select) return;
-
 
     select.innerHTML =
         '<option value="">-- اختر الشركة الأم --</option>';
 
-
     allCompaniesCache
-        .filter(c => c.is_parent)
-        .forEach(comp => {
+        .filter(
+            c => c.is_parent
+        )
+        .forEach(
+            comp => {
 
-            const option =
-                document.createElement('option');
+                const option =
+                    document.createElement(
+                        'option'
+                    );
 
-            option.value = comp.id;
-            option.textContent = comp.name;
+                option.value =
+                    comp.id;
 
-            select.appendChild(option);
-        });
+                option.textContent =
+                    comp.name;
+
+                select.appendChild(
+                    option
+                );
+            }
+        );
 }
-
 
 async function addCompany() {
 
     if (!requireLogin()) return;
 
-
     const name =
-        document.getElementById('compName')
-            ?.value.trim();
-
+        document
+            .getElementById('compName')
+            ?.value
+            .trim();
 
     const legal_name =
-        document.getElementById('compLegalName')
-            ?.value.trim();
-
+        document
+            .getElementById('compLegalName')
+            ?.value
+            .trim();
 
     const tax_id =
-        document.getElementById('compTaxId')
-            ?.value.trim();
-
+        document
+            .getElementById('compTaxId')
+            ?.value
+            .trim();
 
     const commercial_register =
-        document.getElementById(
-            'compCommercialRegister'
-        )?.value.trim();
-
+        document
+            .getElementById(
+                'compCommercialRegister'
+            )
+            ?.value
+            .trim();
 
     const industry =
-        document.getElementById('compIndustry')
+        document
+            .getElementById('compIndustry')
             ?.value;
-
 
     const company_size =
-        document.getElementById('compSize')
+        document
+            .getElementById('compSize')
             ?.value;
-
 
     const email =
-        document.getElementById('compEmail')
-            ?.value.trim();
-
+        document
+            .getElementById('compEmail')
+            ?.value
+            .trim();
 
     const phone =
-        document.getElementById('compPhone')
-            ?.value.trim();
-
+        document
+            .getElementById('compPhone')
+            ?.value
+            .trim();
 
     const website =
-        document.getElementById('compWebsite')
-            ?.value.trim();
-
+        document
+            .getElementById('compWebsite')
+            ?.value
+            .trim();
 
     const country =
-        document.getElementById('compCountry')
-            ?.value.trim();
-
+        document
+            .getElementById('compCountry')
+            ?.value
+            .trim();
 
     const state_province =
-        document.getElementById('compState')
-            ?.value.trim();
-
+        document
+            .getElementById('compState')
+            ?.value
+            .trim();
 
     const city =
-        document.getElementById('compCity')
-            ?.value.trim();
-
+        document
+            .getElementById('compCity')
+            ?.value
+            .trim();
 
     const postal_code =
-        document.getElementById('compPostalCode')
-            ?.value.trim();
-
+        document
+            .getElementById('compPostalCode')
+            ?.value
+            .trim();
 
     const address_street =
-        document.getElementById(
-            'compAddressStreet'
-        )?.value.trim();
-
+        document
+            .getElementById(
+                'compAddressStreet'
+            )
+            ?.value
+            .trim();
 
     const currency =
-        document.getElementById('compCurrency')
+        document
+            .getElementById('compCurrency')
             ?.value;
-
 
     const status =
-        document.getElementById('compStatus')
+        document
+            .getElementById('compStatus')
             ?.value;
 
-
     const is_parent =
-        document.getElementById('compIsParent')
+        document
+            .getElementById('compIsParent')
             ?.value === 'true';
 
-
     const parent_id =
-        document.getElementById('compParentId')
+        document
+            .getElementById('compParentId')
             ?.value || null;
-
 
     if (!name || !tax_id || !email) {
 
@@ -1285,12 +1715,10 @@ async function addCompany() {
         );
     }
 
-
     const logo_url =
         await uploadFileToSupabase(
             'compLogoInput'
         );
-
 
     const newCompany = {
 
@@ -1315,12 +1743,14 @@ async function addCompany() {
         parent_id
     };
 
-
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('companies')
-            .insert([newCompany]);
-
+            .insert([
+                newCompany
+            ]);
 
     if (error) {
 
@@ -1330,9 +1760,9 @@ async function addCompany() {
         );
     }
 
-
-    alert('تمت إضافة الشركة بنجاح!');
-
+    alert(
+        'تمت إضافة الشركة بنجاح!'
+    );
 
     const fieldsToReset = [
 
@@ -1350,115 +1780,104 @@ async function addCompany() {
         'compLogoInput'
     ];
 
+    fieldsToReset.forEach(
+        id => {
 
-    fieldsToReset.forEach(id => {
+            const el =
+                document.getElementById(
+                    id
+                );
 
-        const el =
-            document.getElementById(id);
-
-        if (el) {
-            el.value = '';
+            if (el) {
+                el.value = '';
+            }
         }
-    });
-
+    );
 
     fetchCompanies();
 }
 
-
 function openEditCompanyModal(id) {
 
     if (!requireAdmin()) return;
-
 
     const comp =
         allCompaniesCache.find(
             c => c.id === id
         );
 
-
     if (!comp) return;
-
 
     document.getElementById(
         'editCompId'
     ).value = comp.id;
 
-
     document.getElementById(
         'editCompName'
-    ).value = comp.name || '';
-
+    ).value =
+        comp.name || '';
 
     document.getElementById(
         'editCompLegalName'
-    ).value = comp.legal_name || '';
-
+    ).value =
+        comp.legal_name || '';
 
     document.getElementById(
         'editCompTaxId'
-    ).value = comp.tax_id || '';
-
+    ).value =
+        comp.tax_id || '';
 
     document.getElementById(
         'editCompCommercialRegister'
     ).value =
         comp.commercial_register || '';
 
-
     document.getElementById(
         'editCompIndustry'
     ).value =
         comp.industry || 'أخرى';
-
 
     document.getElementById(
         'editCompSize'
     ).value =
         comp.company_size || '1-10';
 
-
     document.getElementById(
         'editCompEmail'
     ).value =
         comp.email || '';
-
 
     document.getElementById(
         'editCompPhone'
     ).value =
         comp.phone || '';
 
-
     document.getElementById(
         'editCompWebsite'
     ).value =
         comp.website || '';
-
 
     document.getElementById(
         'editCompCurrency'
     ).value =
         comp.currency || 'EGP';
 
-
     document.getElementById(
         'editCompStatus'
     ).value =
         comp.status || 'active';
-
 
     const modal =
         document.getElementById(
             'editCompanyModal'
         );
 
-
     if (modal) {
-        modal.classList.add('active');
+        modal.classList.add(
+            'active'
+        );
     }
 }
-
 
 function closeEditCompanyModal() {
 
@@ -1467,89 +1886,76 @@ function closeEditCompanyModal() {
             'editCompanyModal'
         );
 
-
     if (modal) {
-        modal.classList.remove('active');
+        modal.classList.remove(
+            'active'
+        );
     }
 }
-
 
 async function saveCompanyUpdate() {
 
     if (!requireAdmin()) return;
-
 
     const id =
         document.getElementById(
             'editCompId'
         ).value;
 
-
     const name =
         document.getElementById(
             'editCompName'
         ).value.trim();
-
 
     const legal_name =
         document.getElementById(
             'editCompLegalName'
         ).value.trim();
 
-
     const tax_id =
         document.getElementById(
             'editCompTaxId'
         ).value.trim();
-
 
     const commercial_register =
         document.getElementById(
             'editCompCommercialRegister'
         ).value.trim();
 
-
     const industry =
         document.getElementById(
             'editCompIndustry'
         ).value;
-
 
     const company_size =
         document.getElementById(
             'editCompSize'
         ).value;
 
-
     const email =
         document.getElementById(
             'editCompEmail'
         ).value.trim();
-
 
     const phone =
         document.getElementById(
             'editCompPhone'
         ).value.trim();
 
-
     const website =
         document.getElementById(
             'editCompWebsite'
         ).value.trim();
-
 
     const currency =
         document.getElementById(
             'editCompCurrency'
         ).value;
 
-
     const status =
         document.getElementById(
             'editCompStatus'
         ).value;
-
 
     if (!name || !tax_id || !email) {
 
@@ -1557,7 +1963,6 @@ async function saveCompanyUpdate() {
             'الاسم والرقم الضريبي والبريد الإلكتروني مطلوبين.'
         );
     }
-
 
     const updateData = {
 
@@ -1574,13 +1979,13 @@ async function saveCompanyUpdate() {
         status
     };
 
-
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('companies')
             .update(updateData)
             .eq('id', id);
-
 
     if (error) {
 
@@ -1590,29 +1995,24 @@ async function saveCompanyUpdate() {
         );
     }
 
-
     closeEditCompanyModal();
 
     fetchCompanies();
 }
 
-
 async function deleteCompany(id) {
 
     if (!requireAdmin()) return;
-
 
     const comp =
         allCompaniesCache.find(
             c => c.id === id
         );
 
-
     const title =
         comp
             ? comp.name
             : 'هذه الشركة';
-
 
     if (
         !confirm(
@@ -1622,13 +2022,13 @@ async function deleteCompany(id) {
         return;
     }
 
-
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('companies')
             .delete()
             .eq('id', id);
-
 
     if (error) {
 
@@ -1643,10 +2043,9 @@ async function deleteCompany(id) {
     }
 }
 
-
-// =========================================
-// CASE SESSIONS
-// =========================================
+/* =========================================================
+   CASE SESSIONS
+========================================================= */
 
 function addSessionRow(data = {}) {
 
@@ -1655,13 +2054,15 @@ function addSessionRow(data = {}) {
             'sessionsTableBody'
         );
 
-
     if (!tbody) return;
-
 
     const tr =
         document.createElement('tr');
 
+    if (data.id) {
+        tr.dataset.sessionId =
+            data.id;
+    }
 
     tr.innerHTML = `
 
@@ -1669,35 +2070,50 @@ function addSessionRow(data = {}) {
             <input
                 type="datetime-local"
                 class="session-date"
-                value="${data.session_date || ''}"
-                style="width:100%;">
+                value="${escapeHtml(
+                    data.session_date
+                        ? String(data.session_date)
+                            .slice(0, 16)
+                        : ''
+                )}"
+                style="width:100%;"
+            >
         </td>
 
         <td>
             <input
                 type="text"
                 class="session-subject"
-                value="${data.session_subject || ''}"
+                value="${escapeHtml(
+                    data.session_subject || ''
+                )}"
                 placeholder="موضوع الجلسة"
-                style="width:100%;">
+                style="width:100%;"
+            >
         </td>
 
         <td>
             <input
                 type="text"
                 class="session-lawyer"
-                value="${data.attending_lawyer || ''}"
+                value="${escapeHtml(
+                    data.attending_lawyer || ''
+                )}"
                 placeholder="المحامي الحاضر"
-                style="width:100%;">
+                style="width:100%;"
+            >
         </td>
 
         <td>
             <input
                 type="text"
                 class="session-decision"
-                value="${data.decision || ''}"
+                value="${escapeHtml(
+                    data.decision || ''
+                )}"
                 placeholder="قرار الجلسة / ما تم فيها"
-                style="width:100%;">
+                style="width:100%;"
+            >
         </td>
 
         <td>
@@ -1705,34 +2121,81 @@ function addSessionRow(data = {}) {
             <button
                 type="button"
                 class="btn btn-sm btn-danger"
-                onclick="this.closest('tr').remove()">
-
+                onclick="removeSessionRow(this)"
+            >
                 <i class="fa-solid fa-trash"></i>
-
             </button>
 
         </td>
 
     `;
 
-
     tbody.appendChild(tr);
 }
 
+async function removeSessionRow(button) {
 
-// =========================================
-// CASE TYPE
-// =========================================
+    if (!button) return;
 
-function handleCaseTypeChange(selectElem) {
+    const row =
+        button.closest('tr');
 
-    if (selectElem.value === '__add_new__') {
+    if (!row) return;
+
+    const sessionId =
+        row.dataset.sessionId;
+
+    if (!sessionId) {
+
+        row.remove();
+
+        return;
+    }
+
+    if (!requireAdmin()) return;
+
+    if (
+        !confirm(
+            'هل تريد حذف هذه الجلسة نهائياً؟'
+        )
+    ) {
+        return;
+    }
+
+    const {
+        error
+    } =
+        await db
+            .from('case_sessions')
+            .delete()
+            .eq('id', sessionId);
+
+    if (error) {
+
+        alert(
+            'حدث خطأ أثناء حذف الجلسة: ' +
+            error.message
+        );
+
+        return;
+    }
+
+    row.remove();
+}
+
+function handleCaseTypeChange(
+    selectElem
+) {
+
+    if (
+        selectElem.value ===
+        '__add_new__'
+    ) {
 
         const newType =
             prompt(
                 'أدخل نوع القضية الجديد:'
             );
-
 
         if (
             newType &&
@@ -1742,16 +2205,16 @@ function handleCaseTypeChange(selectElem) {
             const val =
                 newType.trim();
 
-
             const option =
                 document.createElement(
                     'option'
                 );
 
+            option.value =
+                val;
 
-            option.value = val;
-            option.text = val;
-
+            option.text =
+                val;
 
             selectElem.add(
                 option,
@@ -1760,15 +2223,13 @@ function handleCaseTypeChange(selectElem) {
                 ]
             );
 
-
-            selectElem.value = val;
-
+            selectElem.value =
+                val;
 
             const editSelect =
                 document.getElementById(
                     'editCaseType'
                 );
-
 
             if (editSelect) {
 
@@ -1777,10 +2238,11 @@ function handleCaseTypeChange(selectElem) {
                         'option'
                     );
 
+                editOption.value =
+                    val;
 
-                editOption.value = val;
-                editOption.text = val;
-
+                editOption.text =
+                    val;
 
                 editSelect.add(
                     editOption
@@ -1789,57 +2251,80 @@ function handleCaseTypeChange(selectElem) {
 
         } else {
 
-            selectElem.selectedIndex = 0;
+            selectElem.selectedIndex =
+                0;
         }
     }
 }
-
-
-
 
 function getStatusBadge(status) {
 
     const s =
         status || 'جارية';
 
-
     switch (s) {
 
         case 'جديدة':
-            return `<span class="badge badge-new">جديدة</span>`;
+            return `
+                <span class="badge badge-new">
+                    جديدة
+                </span>
+            `;
 
         case 'جارية':
-            return `<span class="badge badge-active">جارية</span>`;
+            return `
+                <span class="badge badge-active">
+                    جارية
+                </span>
+            `;
 
         case 'مؤجلة':
-            return `<span class="badge badge-pending">مؤجلة</span>`;
+            return `
+                <span class="badge badge-pending">
+                    مؤجلة
+                </span>
+            `;
 
         case 'تمت':
-            return `<span class="badge badge-done">تمت</span>`;
+            return `
+                <span class="badge badge-done">
+                    تمت
+                </span>
+            `;
 
         case 'مؤرشفة':
-            return `<span class="badge badge-archived">مؤرشفة</span>`;
+            return `
+                <span class="badge badge-archived">
+                    مؤرشفة
+                </span>
+            `;
 
         default:
-            return `<span class="badge badge-active">${s}</span>`;
+            return `
+                <span class="badge badge-active">
+                    ${escapeHtml(s)}
+                </span>
+            `;
     }
 }
-
-
 
 async function fetchCases() {
 
     if (!currentUser) return;
 
-
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await db
             .from('cases')
             .select('*')
-            .order('id', {
-                ascending: false
-            });
-
+            .order(
+                'id',
+                {
+                    ascending: false
+                }
+            );
 
     if (error) {
 
@@ -1851,28 +2336,27 @@ async function fetchCases() {
         return;
     }
 
-
-    allCasesCache = data || [];
+    allCasesCache =
+        data || [];
 
     renderCasesTable(
         allCasesCache
     );
 }
 
-
-function renderCasesTable(casesData) {
+function renderCasesTable(
+    casesData
+) {
 
     const fullTable =
         document.getElementById(
             'casesTableBody'
         );
 
-
     const recentTable =
         document.getElementById(
             'recentCasesTable'
         );
-
 
     const activeCases =
         casesData.filter(
@@ -1882,21 +2366,17 @@ function renderCasesTable(casesData) {
                 !c.status
         );
 
-
     const countStat =
         document.getElementById(
             'stat-cases-count'
         );
-
 
     if (countStat) {
         countStat.innerText =
             activeCases.length;
     }
 
-
     if (!fullTable) return;
-
 
     if (
         !casesData ||
@@ -1904,134 +2384,168 @@ function renderCasesTable(casesData) {
     ) {
 
         fullTable.innerHTML =
-            '<tr><td colspan="10" style="text-align:center;">لا توجد قضايا مطابقة</td></tr>';
-
+            '<tr><td colspan="11" style="text-align:center;">لا توجد قضايا مطابقة</td></tr>';
 
         if (recentTable) {
 
             recentTable.innerHTML =
-                '<tr><td colspan="6" style="text-align:center;">لا توجد قضايا مضافة بعد</td></tr>';
+                '<tr><td colspan="7" style="text-align:center;">لا توجد قضايا مضافة بعد</td></tr>';
         }
-
 
         return;
     }
 
-
     fullTable.innerHTML =
-        casesData.map(c => {
+        casesData
+            .map(c => {
 
-            const adminActions =
-                isAdmin()
-                    ? `
-                        <button
-                            class="btn btn-sm btn-warning"
-                            onclick="openEditModal(${c.id})">
+                const adminActions =
+                    isAdmin()
+                        ? `
+                            <button
+                                class="btn btn-sm btn-warning"
+                                onclick="openEditModal(${c.id})"
+                            >
+                                <i class="fa-solid fa-pen"></i>
+                                تعديل
+                            </button>
 
-                            <i class="fa-solid fa-pen"></i>
-                            تعديل
+                            <button
+                                class="btn btn-sm btn-danger"
+                                onclick="deleteCase(${c.id})"
+                            >
+                                <i class="fa-solid fa-trash"></i>
+                                حذف
+                            </button>
+                          `
+                        : '';
 
-                        </button>
+                return `
 
-                        <button
-                            class="btn btn-sm btn-danger"
-                            onclick="deleteCase(${c.id})">
+                    <tr>
 
-                            <i class="fa-solid fa-trash"></i>
-                            حذف
+                        <td>
+                            <b>
+                                ${escapeHtml(c.name || '')}
+                            </b>
+                        </td>
 
-                        </button>
-                    `
-                    : `
-                        <span class="badge badge-done">
-                            عرض فقط
-                        </span>
-                    `;
+                        <td>
+                            ${escapeHtml(
+                                c.client_name ||
+                                'غير محدد'
+                            )}
+                        </td>
 
+                        <td>
 
-            return `
+                            ${escapeHtml(
+                                c.opponent ||
+                                'غير محدد'
+                            )}
 
-                <tr>
+                            ${
+                                c.opponent_phone
+                                    ? `
+                                        <br>
+                                        <small>
+                                            📱 ${escapeHtml(
+                                                c.opponent_phone
+                                            )}
+                                        </small>
+                                      `
+                                    : ''
+                            }
 
-                    <td>
-                        <b>${c.name || ''}</b>
-                    </td>
+                        </td>
 
-                    <td>
-                        ${c.client_name || 'غير محدد'}
-                    </td>
+                        <td>
+                            ${escapeHtml(
+                                c.case_type ||
+                                'مدني'
+                            )}
+                        </td>
 
-                    <td>
-                        ${c.opponent || 'غير محدد'}
+                        <td>
+                            ${
+                                c.case_number
+                                    ? `${escapeHtml(
+                                        c.case_number
+                                      )} / ${escapeHtml(
+                                        c.case_year || ''
+                                      )}`
+                                    : 'غير مسجل'
+                            }
+                        </td>
 
-                        ${
-                            c.opponent_phone
-                                ? `<br>
-                                   <small>
-                                   📱 ${c.opponent_phone}
-                                   </small>`
-                                : ''
-                        }
-                    </td>
+                        <td>
 
-                    <td>
-                        ${c.case_type || 'مدني'}
-                    </td>
+                            ${escapeHtml(
+                                c.court_name ||
+                                'غير محدد'
+                            )}
 
-                    <td>
-                        ${
-                            c.case_number
-                                ? `${c.case_number} / ${c.case_year || ''}`
-                                : 'غير مسجل'
-                        }
-                    </td>
+                            ${
+                                c.court_branch
+                                    ? `(
+                                        ${escapeHtml(
+                                            c.court_branch
+                                        )}
+                                      )`
+                                    : ''
+                            }
 
-                    <td>
-                        ${c.court_name || 'غير محدد'}
+                        </td>
 
-                        ${
-                            c.court_branch
-                                ? `(${c.court_branch})`
-                                : ''
-                        }
-                    </td>
+                        <td>
+                            ${escapeHtml(
+                                c.assigned_lawyer ||
+                                'غير محدد'
+                            )}
+                        </td>
 
-                    <td>
-                        ${c.assigned_lawyer || 'غير محدد'}
-                    </td>
+                        <td>
 
-                    <td>
-                        ${
-                            c.attachment_url
-                                ? `
-                                    <a
-                                        href="${c.attachment_url}"
-                                        target="_blank"
-                                        class="btn btn-sm btn-info">
+                            ${
+                                c.attachment_url
+                                    ? `
+                                        <a
+                                            href="${c.attachment_url}"
+                                            target="_blank"
+                                            class="btn btn-sm btn-info"
+                                        >
+                                            <i class="fa-solid fa-image"></i>
+                                            عرض المرفق
+                                        </a>
+                                      `
+                                    : 'لا يوجد'
+                            }
 
-                                        <i class="fa-solid fa-image"></i>
-                                        عرض المرفق
+                        </td>
 
-                                    </a>
-                                  `
-                                : 'لا يوجد'
-                        }
-                    </td>
+                        <td>
+                            ${getStatusBadge(c.status)}
+                        </td>
 
-                    <td>
-                        ${getStatusBadge(c.status)}
-                    </td>
+                        <td>
 
-                    <td>
-                        ${adminActions}
-                    </td>
+                            <button
+                                class="btn btn-sm btn-info"
+                                onclick="openCaseDetails(${c.id})"
+                            >
+                                <i class="fa-solid fa-eye"></i>
+                                عرض
+                            </button>
 
-                </tr>
+                            ${adminActions}
 
-            `;
+                        </td>
 
-        }).join('');
+                    </tr>
+                `;
 
+            })
+            .join('');
 
     if (recentTable) {
 
@@ -2045,71 +2559,93 @@ function renderCasesTable(casesData) {
                             ? `
                                 <button
                                     class="btn btn-sm btn-warning"
-                                    onclick="openEditModal(${c.id})">
+                                    onclick="openEditModal(${c.id})"
+                                >
                                     تعديل
                                 </button>
 
                                 <button
                                     class="btn btn-sm btn-danger"
-                                    onclick="deleteCase(${c.id})">
+                                    onclick="deleteCase(${c.id})"
+                                >
                                     حذف
                                 </button>
                               `
-                            : `
-                                <span class="badge badge-done">
-                                    عرض فقط
-                                </span>
-                              `;
-
+                            : '';
 
                     return `
 
                         <tr>
 
                             <td>
-                                <b>${c.name || ''}</b>
+                                <b>
+                                    ${escapeHtml(
+                                        c.name || ''
+                                    )}
+                                </b>
                             </td>
 
                             <td>
-                                ${c.client_name || 'غير محدد'}
+                                ${escapeHtml(
+                                    c.client_name ||
+                                    'غير محدد'
+                                )}
                             </td>
 
                             <td>
-                                ${c.case_type || 'مدني'}
+                                ${escapeHtml(
+                                    c.case_type ||
+                                    'مدني'
+                                )}
                             </td>
 
                             <td>
                                 ${
                                     c.case_number
-                                        ? `${c.case_number} / ${c.case_year || ''}`
+                                        ? `${escapeHtml(
+                                            c.case_number
+                                          )} / ${escapeHtml(
+                                            c.case_year || ''
+                                          )}`
                                         : 'غير مسجل'
                                 }
                             </td>
 
                             <td>
-                                ${getStatusBadge(c.status)}
+                                ${getStatusBadge(
+                                    c.status
+                                )}
                             </td>
 
                             <td>
+
+                                <button
+                                    class="btn btn-sm btn-info"
+                                    onclick="openCaseDetails(${c.id})"
+                                >
+                                    عرض
+                                </button>
+
                                 ${adminActions}
+
                             </td>
 
                         </tr>
 
                     `;
-
-                }).join('');
+                })
+                .join('');
     }
 }
 
-
-function filterCases(searchTerm = '') {
+function filterCases(
+    searchTerm = ''
+) {
 
     const term =
         searchTerm
             .toLowerCase()
             .trim();
-
 
     if (!term) {
 
@@ -2120,148 +2656,151 @@ function filterCases(searchTerm = '') {
         return;
     }
 
-
     const filtered =
-        allCasesCache.filter(c =>
+        allCasesCache.filter(
+            c =>
 
-            (
-                c.name &&
-                c.name
-                    .toLowerCase()
-                    .includes(term)
-            )
+                (
+                    c.name &&
+                    c.name
+                        .toLowerCase()
+                        .includes(term)
+                )
 
-            ||
+                ||
 
-            (
-                c.client_name &&
-                c.client_name
-                    .toLowerCase()
-                    .includes(term)
-            )
+                (
+                    c.client_name &&
+                    c.client_name
+                        .toLowerCase()
+                        .includes(term)
+                )
 
-            ||
+                ||
 
-            (
-                c.case_number &&
-                c.case_number
-                    .toString()
-                    .includes(term)
-            )
+                (
+                    c.case_number &&
+                    c.case_number
+                        .toString()
+                        .includes(term)
+                )
 
-            ||
+                ||
 
-            (
-                c.opponent &&
-                c.opponent
-                    .toLowerCase()
-                    .includes(term)
-            )
+                (
+                    c.opponent &&
+                    c.opponent
+                        .toLowerCase()
+                        .includes(term)
+                )
         );
-
 
     renderCasesTable(
         filtered
     );
 }
 
-
-
-
 async function addCase() {
 
     if (!requireLogin()) return;
 
-
     const name =
-        document.getElementById(
-            'caseName'
-        )?.value.trim();
-
+        document
+            .getElementById('caseName')
+            ?.value
+            .trim();
 
     const client_name =
-        document.getElementById(
-            'clientName'
-        )?.value.trim();
-
+        document
+            .getElementById('clientName')
+            ?.value
+            .trim();
 
     const power_of_attorney_no =
-        document.getElementById(
-            'powerOfAttorneyNo'
-        )?.value.trim();
-
+        document
+            .getElementById(
+                'powerOfAttorneyNo'
+            )
+            ?.value
+            .trim();
 
     const poa_issue_place =
-        document.getElementById(
-            'poaIssuePlace'
-        )?.value.trim();
-
+        document
+            .getElementById(
+                'poaIssuePlace'
+            )
+            ?.value
+            .trim();
 
     const poa_issue_year =
-        document.getElementById(
-            'poaIssueYear'
-        )?.value.trim();
-
+        document
+            .getElementById(
+                'poaIssueYear'
+            )
+            ?.value
+            .trim();
 
     const opponent =
-        document.getElementById(
-            'opponentName'
-        )?.value.trim();
-
+        document
+            .getElementById('opponentName')
+            ?.value
+            .trim();
 
     const opponent_phone =
-        document.getElementById(
-            'opponentPhone'
-        )?.value.trim();
-
+        document
+            .getElementById('opponentPhone')
+            ?.value
+            .trim();
 
     const case_type =
-        document.getElementById(
-            'caseType'
-        )?.value;
-
+        document
+            .getElementById('caseType')
+            ?.value;
 
     const status =
-        document.getElementById(
-            'caseStatus'
-        )?.value;
-
+        document
+            .getElementById('caseStatus')
+            ?.value;
 
     const case_number =
-        document.getElementById(
-            'caseNumber'
-        )?.value.trim();
-
+        document
+            .getElementById('caseNumber')
+            ?.value
+            .trim();
 
     const case_year =
-        document.getElementById(
-            'caseYear'
-        )?.value.trim();
-
+        document
+            .getElementById('caseYear')
+            ?.value
+            .trim();
 
     const court_name =
-        document.getElementById(
-            'courtName'
-        )?.value.trim();
-
+        document
+            .getElementById('courtName')
+            ?.value
+            .trim();
 
     const court_branch =
-        document.getElementById(
-            'courtBranch'
-        )?.value.trim();
-
+        document
+            .getElementById('courtBranch')
+            ?.value
+            .trim();
 
     const assigned_lawyer =
-        document.getElementById(
-            'assignedLawyer'
-        )?.value.trim();
-
+        document
+            .getElementById(
+                'assignedLawyer'
+            )
+            ?.value
+            .trim();
 
     const case_details =
-        document.getElementById(
-            'caseDetailsNotes'
-        )?.value.trim();
-
+        document
+            .getElementById(
+                'caseDetailsNotes'
+            )
+            ?.value
+            .trim();
 
     if (!name) {
 
@@ -2270,12 +2809,10 @@ async function addCase() {
         );
     }
 
-
     const attachment_url =
         await uploadFileToSupabase(
             'caseAttachmentInput'
         );
-
 
     const newCase = {
 
@@ -2297,17 +2834,17 @@ async function addCase() {
         attachment_url
     };
 
-
     const {
         data: insertedCase,
         error
     } =
         await db
             .from('cases')
-            .insert([newCase])
+            .insert([
+                newCase
+            ])
             .select()
             .single();
-
 
     if (error) {
 
@@ -2317,98 +2854,117 @@ async function addCase() {
         );
     }
 
-
     const caseId =
         insertedCase
             ? insertedCase.id
             : null;
 
-
     if (caseId) {
 
         const sessionPromises = [];
-
 
         document
             .querySelectorAll(
                 '#sessionsTableBody tr'
             )
-            .forEach(row => {
+            .forEach(
+                row => {
 
-                const session_date =
-                    row.querySelector(
-                        '.session-date'
-                    )?.value;
+                    const session_date =
+                        row.querySelector(
+                            '.session-date'
+                        )?.value;
 
+                    const session_subject =
+                        row.querySelector(
+                            '.session-subject'
+                        )?.value
+                        ?.trim();
 
-                const session_subject =
-                    row.querySelector(
-                        '.session-subject'
-                    )?.value?.trim();
+                    const attending_lawyer =
+                        row.querySelector(
+                            '.session-lawyer'
+                        )?.value
+                        ?.trim();
 
+                    const decision =
+                        row.querySelector(
+                            '.session-decision'
+                        )?.value
+                        ?.trim();
 
-                const attending_lawyer =
-                    row.querySelector(
-                        '.session-lawyer'
-                    )?.value?.trim();
+                    if (
+                        session_date ||
+                        session_subject ||
+                        attending_lawyer ||
+                        decision
+                    ) {
 
+                        sessionPromises.push(
+                            db
+                                .from(
+                                    'case_sessions'
+                                )
+                                .insert([
+                                    {
+                                        case_id:
+                                            caseId,
 
-                const decision =
-                    row.querySelector(
-                        '.session-decision'
-                    )?.value?.trim();
+                                        session_date:
+                                            session_date ||
+                                            null,
 
+                                        session_subject:
+                                            session_subject ||
+                                            '',
 
-                if (
-                    session_date ||
-                    session_subject ||
-                    decision
-                ) {
+                                        attending_lawyer:
+                                            attending_lawyer ||
+                                            '',
 
-                    sessionPromises.push(
-
-                        db
-                            .from('case_sessions')
-                            .insert([{
-
-                                case_id: caseId,
-
-                                session_date:
-                                    session_date ||
-                                    null,
-
-                                session_subject:
-                                    session_subject ||
-                                    '',
-
-                                attending_lawyer:
-                                    attending_lawyer ||
-                                    '',
-
-                                decision:
-                                    decision ||
-                                    ''
-                            }])
-                    );
+                                        decision:
+                                            decision ||
+                                            ''
+                                    }
+                                ])
+                        );
+                    }
                 }
-            });
-
+            );
 
         if (
             sessionPromises.length > 0
         ) {
 
-            await Promise.all(
-                sessionPromises
-            );
+            const results =
+                await Promise.all(
+                    sessionPromises
+                );
+
+            const failedSession =
+                results.find(
+                    result =>
+                        result.error
+                );
+
+            if (failedSession) {
+
+                console.error(
+                    'Session insert error:',
+                    failedSession.error
+                );
+
+                alert(
+                    'تم إنشاء القضية، لكن حدث خطأ أثناء حفظ إحدى الجلسات: ' +
+                    failedSession.error.message
+                );
+            }
         }
     }
-
 
     alert(
         'تمت إضافة القضية بنجاح!'
     );
-
 
     const fieldsToReset = [
 
@@ -2420,56 +2976,55 @@ async function addCase() {
         'opponentName',
         'opponentPhone',
         'caseNumber',
+        'caseYear',
         'courtName',
         'courtBranch',
+        'assignedLawyer',
         'caseDetailsNotes',
         'caseAttachmentInput'
     ];
 
+    fieldsToReset.forEach(
+        id => {
 
-    fieldsToReset.forEach(id => {
+            const el =
+                document.getElementById(
+                    id
+                );
 
-        const el =
-            document.getElementById(id);
-
-        if (el) {
-            el.value = '';
+            if (el) {
+                el.value = '';
+            }
         }
-    });
-
+    );
 
     const sessionsTableBody =
         document.getElementById(
             'sessionsTableBody'
         );
 
-
     if (sessionsTableBody) {
         sessionsTableBody.innerHTML = '';
     }
 
-
     fetchCases();
 }
 
-
-
-async function deleteCase(caseId) {
+async function deleteCase(
+    caseId
+) {
 
     if (!requireAdmin()) return;
-
 
     const item =
         allCasesCache.find(
             c => c.id === caseId
         );
 
-
     const caseTitle =
         item
             ? item.name
             : 'هذه القضية';
-
 
     if (
         !confirm(
@@ -2479,13 +3034,16 @@ async function deleteCase(caseId) {
         return;
     }
 
-
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('cases')
             .delete()
-            .eq('id', caseId);
-
+            .eq(
+                'id',
+                caseId
+            );
 
     if (error) {
 
@@ -2500,122 +3058,353 @@ async function deleteCase(caseId) {
     }
 }
 
-
-
-
-async function openEditModal(caseId) {
+async function openEditModal(
+    caseId
+) {
 
     if (!requireAdmin()) return;
-
 
     const item =
         allCasesCache.find(
             c => c.id === caseId
         );
 
-
     if (!item) return;
 
+    const setValue =
+        (
+            id,
+            value
+        ) => {
 
-    document.getElementById(
-        'editCaseId'
-    ).value = item.id;
+            const el =
+                document.getElementById(
+                    id
+                );
 
+            if (el) {
+                el.value =
+                    value ?? '';
+            }
+        };
 
-    document.getElementById(
-        'editCaseName'
-    ).value = item.name || '';
+    setValue(
+        'editCaseId',
+        item.id
+    );
 
+    setValue(
+        'editCaseName',
+        item.name
+    );
 
-    document.getElementById(
-        'editClientName'
-    ).value =
-        item.client_name || '';
+    setValue(
+        'editClientName',
+        item.client_name
+    );
 
+    setValue(
+        'editPowerOfAttorneyNo',
+        item.power_of_attorney_no
+    );
 
-    document.getElementById(
-        'editPowerOfAttorneyNo'
-    ).value =
-        item.power_of_attorney_no || '';
+    setValue(
+        'editPoaIssuePlace',
+        item.poa_issue_place
+    );
 
+    setValue(
+        'editPoaIssueYear',
+        item.poa_issue_year
+    );
 
-    document.getElementById(
-        'editPoaIssuePlace'
-    ).value =
-        item.poa_issue_place || '';
+    setValue(
+        'editOpponentName',
+        item.opponent
+    );
 
+    setValue(
+        'editOpponentPhone',
+        item.opponent_phone
+    );
 
-    document.getElementById(
-        'editPoaIssueYear'
-    ).value =
-        item.poa_issue_year || '';
+    setValue(
+        'editCaseType',
+        item.case_type || 'مدني'
+    );
 
+    setValue(
+        'editCaseStatus',
+        item.status || 'جارية'
+    );
 
-    document.getElementById(
-        'editOpponentName'
-    ).value =
-        item.opponent || '';
+    setValue(
+        'editCaseNumber',
+        item.case_number
+    );
 
+    setValue(
+        'editCaseYear',
+        item.case_year || '2026'
+    );
 
-    document.getElementById(
-        'editOpponentPhone'
-    ).value =
-        item.opponent_phone || '';
+    setValue(
+        'editCourtName',
+        item.court_name
+    );
 
+    setValue(
+        'editCourtBranch',
+        item.court_branch
+    );
 
-    document.getElementById(
-        'editCaseType'
-    ).value =
-        item.case_type || 'مدني';
+    setValue(
+        'editAssignedLawyer',
+        item.assigned_lawyer
+    );
 
+    setValue(
+        'editCaseDetailsNotes',
+        item.case_details
+    );
 
-    document.getElementById(
-        'editCaseStatus'
-    ).value =
-        item.status || 'جارية';
+    /*
+     * دعم لو الـHTML عندك مسمي الحقل
+     * editCaseDetails بدلاً من editCaseDetailsNotes
+     */
+    if (
+        !document.getElementById(
+            'editCaseDetailsNotes'
+        )
+    ) {
 
+        setValue(
+            'editCaseDetails',
+            item.case_details
+        );
+    }
 
-    document.getElementById(
-        'editCaseNumber'
-    ).value =
-        item.case_number || '';
+    const sessionsBody =
+        document.getElementById(
+            'editSessionsTableBody'
+        );
 
+    if (sessionsBody) {
 
-    document.getElementById(
-        'editCaseYear'
-    ).value =
-        item.case_year || '2026';
+        sessionsBody.innerHTML = '';
 
+        const {
+            data: sessions,
+            error
+        } =
+            await db
+                .from('case_sessions')
+                .select('*')
+                .eq(
+                    'case_id',
+                    caseId
+                )
+                .order(
+                    'session_date',
+                    {
+                        ascending: true,
+                        nullsFirst: false
+                    }
+                )
+                .order(
+                    'id',
+                    {
+                        ascending: true
+                    }
+                );
 
-    document.getElementById(
-        'editCourtName'
-    ).value =
-        item.court_name || '';
+        if (error) {
 
+            console.error(
+                'Error loading case sessions:',
+                error.message
+            );
 
-    document.getElementById(
-        'editCourtBranch'
-    ).value =
-        item.court_branch || '';
+            alert(
+                'تعذر تحميل جلسات القضية: ' +
+                error.message
+            );
 
+        } else {
 
-    document.getElementById(
-        'editAssignedLawyer'
-    ).value =
-        item.assigned_lawyer || '';
-
+            (sessions || []).forEach(
+                session =>
+                    addEditSessionRow(
+                        session
+                    )
+            );
+        }
+    }
 
     const editModal =
         document.getElementById(
             'editCaseModal'
         );
 
-
     if (editModal) {
-        editModal.classList.add('active');
+
+        editModal.classList.add(
+            'active'
+        );
     }
 }
 
+function addEditSessionRow(
+    data = {}
+) {
+
+    const tbody =
+        document.getElementById(
+            'editSessionsTableBody'
+        );
+
+    if (!tbody) return;
+
+    const tr =
+        document.createElement('tr');
+
+    if (data.id) {
+
+        tr.dataset.sessionId =
+            data.id;
+    }
+
+    tr.innerHTML = `
+
+        <td>
+
+            <input
+                type="datetime-local"
+                class="session-date"
+                value="${escapeHtml(
+                    data.session_date
+                        ? String(data.session_date)
+                            .slice(0, 16)
+                        : ''
+                )}"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <input
+                type="text"
+                class="session-subject"
+                value="${escapeHtml(
+                    data.session_subject || ''
+                )}"
+                placeholder="موضوع الجلسة"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <input
+                type="text"
+                class="session-lawyer"
+                value="${escapeHtml(
+                    data.attending_lawyer || ''
+                )}"
+                placeholder="المحامي الحاضر"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <input
+                type="text"
+                class="session-decision"
+                value="${escapeHtml(
+                    data.decision || ''
+                )}"
+                placeholder="قرار الجلسة / ما تم فيها"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-danger"
+                onclick="removeEditSessionRow(this)"
+            >
+                <i class="fa-solid fa-trash"></i>
+            </button>
+
+        </td>
+
+    `;
+
+    tbody.appendChild(tr);
+}
+
+async function removeEditSessionRow(
+    button
+) {
+
+    if (!button) return;
+
+    const row =
+        button.closest('tr');
+
+    if (!row) return;
+
+    const sessionId =
+        row.dataset.sessionId;
+
+    if (!sessionId) {
+
+        row.remove();
+
+        return;
+    }
+
+    if (!requireAdmin()) return;
+
+    if (
+        !confirm(
+            'هل تريد حذف هذه الجلسة نهائياً؟'
+        )
+    ) {
+        return;
+    }
+
+    const {
+        error
+    } =
+        await db
+            .from('case_sessions')
+            .delete()
+            .eq(
+                'id',
+                sessionId
+            );
+
+    if (error) {
+
+        alert(
+            'حدث خطأ أثناء حذف الجلسة: ' +
+            error.message
+        );
+
+        return;
+    }
+
+    row.remove();
+}
 
 function closeEditModal() {
 
@@ -2624,107 +3413,120 @@ function closeEditModal() {
             'editCaseModal'
         );
 
-
     if (editModal) {
-        editModal.classList.remove('active');
+
+        editModal.classList.remove(
+            'active'
+        );
     }
 }
-
 
 async function saveCaseUpdate() {
 
     if (!requireAdmin()) return;
-
 
     const id =
         document.getElementById(
             'editCaseId'
         ).value;
 
+    const getValue =
+        (
+            id
+        ) => {
+
+            return (
+                document.getElementById(
+                    id
+                )?.value ||
+                ''
+            ).trim();
+        };
 
     const name =
-        document.getElementById(
+        getValue(
             'editCaseName'
-        ).value.trim();
-
+        );
 
     const client_name =
-        document.getElementById(
+        getValue(
             'editClientName'
-        ).value.trim();
-
+        );
 
     const power_of_attorney_no =
-        document.getElementById(
+        getValue(
             'editPowerOfAttorneyNo'
-        ).value.trim();
-
+        );
 
     const poa_issue_place =
-        document.getElementById(
+        getValue(
             'editPoaIssuePlace'
-        ).value.trim();
-
+        );
 
     const poa_issue_year =
-        document.getElementById(
+        getValue(
             'editPoaIssueYear'
-        ).value.trim();
-
+        );
 
     const opponent =
-        document.getElementById(
+        getValue(
             'editOpponentName'
-        ).value.trim();
-
+        );
 
     const opponent_phone =
-        document.getElementById(
+        getValue(
             'editOpponentPhone'
-        ).value.trim();
-
+        );
 
     const case_type =
         document.getElementById(
             'editCaseType'
-        ).value;
-
+        )?.value || '';
 
     const status =
         document.getElementById(
             'editCaseStatus'
-        ).value;
-
+        )?.value || '';
 
     const case_number =
-        document.getElementById(
+        getValue(
             'editCaseNumber'
-        ).value.trim();
-
+        );
 
     const case_year =
-        document.getElementById(
+        getValue(
             'editCaseYear'
-        ).value.trim();
-
+        );
 
     const court_name =
-        document.getElementById(
+        getValue(
             'editCourtName'
-        ).value.trim();
-
+        );
 
     const court_branch =
-        document.getElementById(
+        getValue(
             'editCourtBranch'
-        ).value.trim();
-
+        );
 
     const assigned_lawyer =
-        document.getElementById(
+        getValue(
             'editAssignedLawyer'
-        ).value.trim();
+        );
 
+    let case_details =
+        document.getElementById(
+            'editCaseDetailsNotes'
+        )?.value?.trim();
+
+    if (
+        case_details === undefined
+    ) {
+
+        case_details =
+            document.getElementById(
+                'editCaseDetails'
+            )?.value?.trim() || '';
+    }
 
     if (!name) {
 
@@ -2732,7 +3534,6 @@ async function saveCaseUpdate() {
             'اسم القضية مطلوب'
         );
     }
-
 
     const updateData = {
 
@@ -2749,15 +3550,14 @@ async function saveCaseUpdate() {
         case_year,
         court_name,
         court_branch,
-        assigned_lawyer
+        assigned_lawyer,
+        case_details
     };
-
 
     const newAttachmentUrl =
         await uploadFileToSupabase(
             'editCaseAttachmentInput'
         );
-
 
     if (newAttachmentUrl) {
 
@@ -2765,13 +3565,18 @@ async function saveCaseUpdate() {
             newAttachmentUrl;
     }
 
-
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('cases')
-            .update(updateData)
-            .eq('id', id);
-
+            .update(
+                updateData
+            )
+            .eq(
+                'id',
+                id
+            );
 
     if (error) {
 
@@ -2781,28 +3586,580 @@ async function saveCaseUpdate() {
         );
     }
 
+    /*
+     * مهم جداً:
+     * هنا لا نحذف كل الجلسات.
+     *
+     * الجلسة التي لها ID يتم UPDATE لها.
+     * الجلسة الجديدة بدون ID يتم INSERT لها.
+     * أي جلسة قديمة لم يتم حذفها تظل موجودة.
+     */
+    const sessionsBody =
+        document.getElementById(
+            'editSessionsTableBody'
+        );
+
+    if (sessionsBody) {
+
+        const rows =
+            Array.from(
+                sessionsBody.querySelectorAll(
+                    'tr'
+                )
+            );
+
+        for (
+            const row of rows
+        ) {
+
+            const sessionId =
+                row.dataset.sessionId ||
+                null;
+
+            const session_date =
+                row.querySelector(
+                    '.session-date'
+                )?.value || null;
+
+            const session_subject =
+                row.querySelector(
+                    '.session-subject'
+                )?.value
+                ?.trim() || '';
+
+            const attending_lawyer =
+                row.querySelector(
+                    '.session-lawyer'
+                )?.value
+                ?.trim() || '';
+
+            const decision =
+                row.querySelector(
+                    '.session-decision'
+                )?.value
+                ?.trim() || '';
+
+            const hasData =
+                session_date ||
+                session_subject ||
+                attending_lawyer ||
+                decision;
+
+            if (!hasData) {
+                continue;
+            }
+
+            const sessionData = {
+
+                case_id:
+                    Number(id),
+
+                session_date:
+                    session_date ||
+                    null,
+
+                session_subject,
+
+                attending_lawyer,
+
+                decision
+            };
+
+            if (sessionId) {
+
+                delete sessionData.case_id;
+
+                const {
+                    error: sessionUpdateError
+                } =
+                    await db
+                        .from(
+                            'case_sessions'
+                        )
+                        .update(
+                            sessionData
+                        )
+                        .eq(
+                            'id',
+                            sessionId
+                        )
+                        .eq(
+                            'case_id',
+                            id
+                        );
+
+                if (
+                    sessionUpdateError
+                ) {
+
+                    console.error(
+                        'Session update error:',
+                        sessionUpdateError
+                    );
+
+                    return alert(
+                        'تم تحديث القضية، لكن حدث خطأ أثناء تحديث جلسة: ' +
+                        sessionUpdateError.message
+                    );
+                }
+
+            } else {
+
+                const {
+                    error: sessionInsertError
+                } =
+                    await db
+                        .from(
+                            'case_sessions'
+                        )
+                        .insert([
+                            sessionData
+                        ]);
+
+                if (
+                    sessionInsertError
+                ) {
+
+                    console.error(
+                        'Session insert error:',
+                        sessionInsertError
+                    );
+
+                    return alert(
+                        'تم تحديث القضية، لكن حدث خطأ أثناء إضافة جلسة جديدة: ' +
+                        sessionInsertError.message
+                    );
+                }
+            }
+        }
+    }
 
     closeEditModal();
 
-    fetchCases();
+    await fetchCases();
 }
 
+async function openCaseDetails(
+    caseId
+) {
 
+    if (!requireLogin()) return;
 
+    const item =
+        allCasesCache.find(
+            c => c.id === caseId
+        );
+
+    if (!item) {
+
+        alert(
+            'لم يتم العثور على القضية.'
+        );
+
+        return;
+    }
+
+    const {
+        data: sessions,
+        error
+    } =
+        await db
+            .from('case_sessions')
+            .select('*')
+            .eq(
+                'case_id',
+                caseId
+            )
+            .order(
+                'session_date',
+                {
+                    ascending: true,
+                    nullsFirst: false
+                }
+            )
+            .order(
+                'id',
+                {
+                    ascending: true
+                }
+            );
+
+    if (error) {
+
+        alert(
+            'تعذر تحميل جلسات القضية: ' +
+            error.message
+        );
+
+        return;
+    }
+
+    const existing =
+        document.getElementById(
+            'caseDetailsDynamicModal'
+        );
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const overlay =
+        document.createElement('div');
+
+    overlay.id =
+        'caseDetailsDynamicModal';
+
+    overlay.className =
+        'details-overlay';
+
+    const sessionsHtml =
+        sessions && sessions.length
+            ? `
+                <table class="details-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>موضوع الجلسة</th>
+                            <th>المحامي</th>
+                            <th>القرار / ما تم</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        ${sessions.map(
+                            session => `
+                                <tr>
+
+                                    <td>
+                                        ${
+                                            session.session_date
+                                                ? new Date(
+                                                    session.session_date
+                                                  ).toLocaleString(
+                                                    'ar-EG'
+                                                  )
+                                                : '-'
+                                        }
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(
+                                            session.session_subject ||
+                                            '-'
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(
+                                            session.attending_lawyer ||
+                                            '-'
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(
+                                            session.decision ||
+                                            '-'
+                                        )}
+                                    </td>
+
+                                </tr>
+                            `
+                        ).join('')}
+
+                    </tbody>
+
+                </table>
+              `
+            : `
+                <div class="details-notes">
+                    لا توجد جلسات مسجلة لهذه القضية حتى الآن.
+                </div>
+              `;
+
+    overlay.innerHTML = `
+
+        <div class="details-modal">
+
+            <div class="details-modal-header">
+
+                <div>
+
+                    <h2 style="margin:0;">
+                        تفاصيل القضية
+                    </h2>
+
+                    <small style="color:#64748b;">
+                        ${escapeHtml(
+                            item.name || ''
+                        )}
+                    </small>
+
+                </div>
+
+                <button
+                    class="btn btn-sm btn-secondary"
+                    onclick="closeDynamicCaseDetails()"
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                    إغلاق
+                </button>
+
+            </div>
+
+            <div class="details-grid">
+
+                <div class="details-item">
+                    <label>موضوع القضية</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.name || '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>الموكل</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.client_name ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>الخصم</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.opponent ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>هاتف الخصم</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.opponent_phone ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>نوع القضية</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.case_type ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>رقم القضية</label>
+                    <strong>
+                        ${
+                            item.case_number
+                                ? `${escapeHtml(
+                                    item.case_number
+                                  )} / ${escapeHtml(
+                                    item.case_year ||
+                                    ''
+                                  )}`
+                                : '-'
+                        }
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>المحكمة</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.court_name ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>الدائرة</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.court_branch ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>المحامي المسؤول</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.assigned_lawyer ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>التوكيل</label>
+                    <strong>
+                        ${
+                            item.power_of_attorney_no ||
+                            '-'
+                        }
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>مكان إصدار التوكيل</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.poa_issue_place ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>سنة إصدار التوكيل</label>
+                    <strong>
+                        ${escapeHtml(
+                            item.poa_issue_year ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>الحالة</label>
+                    <strong>
+                        ${getStatusBadge(
+                            item.status
+                        )}
+                    </strong>
+                </div>
+
+            </div>
+
+            <h3>
+                تفاصيل القضية
+            </h3>
+
+            <div class="details-notes">
+                ${
+                    escapeHtml(
+                        item.case_details ||
+                        'لا توجد تفاصيل إضافية.'
+                    )
+                }
+            </div>
+
+            <h3>
+                جلسات القضية
+            </h3>
+
+            ${sessionsHtml}
+
+            <div
+                class="details-actions"
+                style="margin-top:20px;"
+            >
+
+                ${
+                    item.attachment_url
+                        ? `
+                            <a
+                                href="${item.attachment_url}"
+                                target="_blank"
+                                class="btn btn-info"
+                            >
+                                <i class="fa-solid fa-paperclip"></i>
+                                عرض المرفق
+                            </a>
+                          `
+                        : ''
+                }
+
+                ${
+                    isAdmin()
+                        ? `
+                            <button
+                                class="btn btn-warning"
+                                onclick="
+                                    closeDynamicCaseDetails();
+                                    openEditModal(${item.id});
+                                "
+                            >
+                                <i class="fa-solid fa-pen"></i>
+                                تعديل القضية
+                            </button>
+                          `
+                        : ''
+                }
+
+            </div>
+
+        </div>
+    `;
+
+    overlay.addEventListener(
+        'click',
+        event => {
+
+            if (
+                event.target === overlay
+            ) {
+                closeDynamicCaseDetails();
+            }
+        }
+    );
+
+    document.body.appendChild(
+        overlay
+    );
+}
+
+function closeDynamicCaseDetails() {
+
+    const modal =
+        document.getElementById(
+            'caseDetailsDynamicModal'
+        );
+
+    if (modal) {
+        modal.remove();
+    }
+}
+
+/* =========================================================
+   CLIENTS
+========================================================= */
 
 async function fetchClients() {
 
     if (!currentUser) return;
 
-
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await db
             .from('clients')
             .select('*')
-            .order('id', {
-                ascending: false
-            });
-
+            .order(
+                'id',
+                {
+                    ascending: false
+                }
+            );
 
     if (error) {
 
@@ -2814,127 +4171,308 @@ async function fetchClients() {
         return;
     }
 
+    allClientsCache =
+        data || [];
+
+    renderClientsTable(
+        allClientsCache
+    );
+}
+
+function renderClientsTable(
+    clientsData
+) {
 
     const tbody =
         document.getElementById(
             'clientsTableBody'
         );
 
-
     if (!tbody) return;
 
-
     if (
-        !data ||
-        data.length === 0
+        !clientsData ||
+        clientsData.length === 0
     ) {
 
         tbody.innerHTML =
-            '<tr><td colspan="4" style="text-align:center;">لا يوجد موكلين حالياً</td></tr>';
+            '<tr><td colspan="5" style="text-align:center;">لا يوجد موكلين حالياً</td></tr>';
 
         return;
     }
 
-
     tbody.innerHTML =
-        data.map(c => {
+        clientsData
+            .map(c => {
 
-            const adminActions =
-                isAdmin()
-                    ? `
-                        <button
-                            class="btn btn-sm btn-danger"
-                            onclick="deleteClient(${c.id})">
+                const adminActions =
+                    isAdmin()
+                        ? `
+                            <button
+                                class="btn btn-sm btn-warning"
+                                onclick="openEditClientModal(${c.id})"
+                            >
+                                <i class="fa-solid fa-pen"></i>
+                                تعديل
+                            </button>
 
-                            <i class="fa-solid fa-trash"></i>
-                            حذف
+                            <button
+                                class="btn btn-sm btn-danger"
+                                onclick="deleteClient(${c.id})"
+                            >
+                                <i class="fa-solid fa-trash"></i>
+                                حذف
+                            </button>
+                          `
+                        : '';
 
-                        </button>
-                      `
-                    : `
-                        <span class="badge badge-done">
-                            عرض فقط
-                        </span>
-                      `;
+                return `
 
+                    <tr>
 
-            return `
+                        <td>
+                            <b>
+                                ${escapeHtml(
+                                    c.name || ''
+                                )}
+                            </b>
+                        </td>
 
-                <tr>
+                        <td>
+                            ${escapeHtml(
+                                c.phone || ''
+                            )}
+                        </td>
 
-                    <td>
-                        <b>${c.name || ''}</b>
-                    </td>
+                        <td>
 
-                    <td>
-                        ${c.phone || ''}
-                    </td>
+                            ${
+                                c.id_card_url
+                                    ? `
+                                        <a
+                                            href="${c.id_card_url}"
+                                            target="_blank"
+                                        >
 
-                    <td>
+                                            <img
+                                                src="${c.id_card_url}"
+                                                alt="صورة البطاقة"
+                                                style="
+                                                    width:50px;
+                                                    height:50px;
+                                                    object-fit:cover;
+                                                    border-radius:4px;
+                                                    border:1px solid #ccc;
+                                                "
+                                            >
 
-                        ${
-                            c.id_card_url
-                                ? `
-                                    <a
-                                        href="${c.id_card_url}"
-                                        target="_blank">
+                                        </a>
+                                      `
+                                    : `
+                                        <span style="color:#888;">
+                                            لا توجد صورة
+                                        </span>
+                                      `
+                            }
 
-                                        <img
-                                            src="${c.id_card_url}"
-                                            alt="صورة البطاقة"
-                                            style="width:50px;height:50px;object-fit:cover;border-radius:4px;border:1px solid #ccc;">
+                        </td>
 
-                                    </a>
-                                  `
-                                : `
-                                    <span style="color:#888;">
-                                        لا توجد صورة
-                                    </span>
-                                  `
-                        }
+                        <td>
 
-                    </td>
+                            <button
+                                class="btn btn-sm btn-info"
+                                onclick="openClientDetails(${c.id})"
+                            >
+                                <i class="fa-solid fa-eye"></i>
+                                عرض
+                            </button>
 
-                    <td>
-                        ${adminActions}
-                    </td>
+                            ${adminActions}
 
-                </tr>
+                        </td>
 
-            `;
+                    </tr>
 
-        }).join('');
+                `;
+            })
+            .join('');
 }
 
+function addClientExpenseRow(
+    data = {},
+    containerId = 'clientExpensesTableBody'
+) {
+
+    const tbody =
+        document.getElementById(
+            containerId
+        );
+
+    if (!tbody) return;
+
+    const tr =
+        document.createElement('tr');
+
+    if (data.id) {
+
+        tr.dataset.expenseId =
+            data.id;
+    }
+
+    tr.innerHTML = `
+
+        <td>
+
+            <input
+                type="number"
+                step="0.01"
+                min="0"
+                class="client-expense-amount"
+                value="${escapeHtml(
+                    data.amount ?? ''
+                )}"
+                placeholder="0.00"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <input
+                type="date"
+                class="client-expense-date"
+                value="${escapeHtml(
+                    data.expense_date || ''
+                )}"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <input
+                type="text"
+                class="client-expense-reason"
+                value="${escapeHtml(
+                    data.reason || ''
+                )}"
+                placeholder="سبب المصروف"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <input
+                type="text"
+                class="client-expense-spender"
+                value="${escapeHtml(
+                    data.spender || ''
+                )}"
+                placeholder="المحامي / المسؤول"
+                style="width:100%;"
+            >
+
+        </td>
+
+        <td>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-danger"
+                onclick="removeClientExpenseRow(this)"
+            >
+                <i class="fa-solid fa-trash"></i>
+            </button>
+
+        </td>
+
+    `;
+
+    tbody.appendChild(tr);
+}
+
+async function removeClientExpenseRow(
+    button
+) {
+
+    if (!button) return;
+
+    const row =
+        button.closest('tr');
+
+    if (!row) return;
+
+    const expenseId =
+        row.dataset.expenseId;
+
+    if (!expenseId) {
+
+        row.remove();
+
+        return;
+    }
+
+    if (!requireAdmin()) return;
+
+    if (
+        !confirm(
+            'هل تريد حذف هذا المصروف نهائياً؟'
+        )
+    ) {
+        return;
+    }
+
+    const {
+        error
+    } =
+        await db
+            .from('client_expenses')
+            .delete()
+            .eq(
+                'id',
+                expenseId
+            );
+
+    if (error) {
+
+        alert(
+            'حدث خطأ أثناء حذف المصروف: ' +
+            error.message
+        );
+
+        return;
+    }
+
+    row.remove();
+}
 
 async function addClient() {
 
     if (!requireLogin()) return;
-
 
     const nameInput =
         document.getElementById(
             'clientFormName'
         );
 
-
     const phoneInput =
         document.getElementById(
             'clientFormPhone'
         );
-
 
     const name =
         nameInput
             ? nameInput.value.trim()
             : '';
 
-
     const phone =
         phoneInput
             ? phoneInput.value.trim()
             : '';
-
 
     if (!name || !phone) {
 
@@ -2943,24 +4481,26 @@ async function addClient() {
         );
     }
 
-
     const id_card_url =
         await uploadFileToSupabase(
             'clientIdCardInput'
         );
 
-
-    const { error } =
+    const {
+        data: insertedClient,
+        error
+    } =
         await db
             .from('clients')
-            .insert([{
-
-                name,
-                phone,
-                id_card_url
-
-            }]);
-
+            .insert([
+                {
+                    name,
+                    phone,
+                    id_card_url
+                }
+            ])
+            .select()
+            .single();
 
     if (error) {
 
@@ -2970,36 +4510,890 @@ async function addClient() {
         );
     }
 
+    const clientId =
+        insertedClient?.id;
+
+    if (clientId) {
+
+        const expensesBody =
+            document.getElementById(
+                'clientExpensesTableBody'
+            );
+
+        if (expensesBody) {
+
+            const rows =
+                Array.from(
+                    expensesBody.querySelectorAll(
+                        'tr'
+                    )
+                );
+
+            for (
+                const row of rows
+            ) {
+
+                const amount =
+                    row.querySelector(
+                        '.client-expense-amount'
+                    )?.value;
+
+                const expense_date =
+                    row.querySelector(
+                        '.client-expense-date'
+                    )?.value;
+
+                const reason =
+                    row.querySelector(
+                        '.client-expense-reason'
+                    )?.value
+                    ?.trim();
+
+                const spender =
+                    row.querySelector(
+                        '.client-expense-spender'
+                    )?.value
+                    ?.trim();
+
+                if (
+                    !amount &&
+                    !expense_date &&
+                    !reason &&
+                    !spender
+                ) {
+                    continue;
+                }
+
+                const {
+                    error: expenseError
+                } =
+                    await db
+                        .from(
+                            'client_expenses'
+                        )
+                        .insert([
+                            {
+                                client_id:
+                                    clientId,
+
+                                amount:
+                                    amount
+                                        ? Number(amount)
+                                        : 0,
+
+                                expense_date:
+                                    expense_date ||
+                                    null,
+
+                                reason:
+                                    reason ||
+                                    '',
+
+                                spender:
+                                    spender ||
+                                    ''
+                            }
+                        ]);
+
+                if (expenseError) {
+
+                    console.error(
+                        'Client expense insert error:',
+                        expenseError
+                    );
+
+                    alert(
+                        'تم إضافة الموكل، لكن حدث خطأ أثناء حفظ أحد المصروفات: ' +
+                        expenseError.message
+                    );
+
+                    break;
+                }
+            }
+        }
+    }
 
     if (nameInput) {
         nameInput.value = '';
     }
 
-
     if (phoneInput) {
         phoneInput.value = '';
     }
-
 
     const fileInput =
         document.getElementById(
             'clientIdCardInput'
         );
 
-
     if (fileInput) {
         fileInput.value = '';
     }
 
+    const expensesBody =
+        document.getElementById(
+            'clientExpensesTableBody'
+        );
 
-    fetchClients();
+    if (expensesBody) {
+        expensesBody.innerHTML = '';
+    }
+
+    await fetchClients();
 }
 
+async function openClientDetails(
+    clientId
+) {
 
-async function deleteClient(id) {
+    if (!requireLogin()) return;
+
+    const client =
+        allClientsCache.find(
+            c => c.id === clientId
+        );
+
+    if (!client) {
+
+        alert(
+            'لم يتم العثور على الموكل.'
+        );
+
+        return;
+    }
+
+    const {
+        data: expenses,
+        error
+    } =
+        await db
+            .from('client_expenses')
+            .select('*')
+            .eq(
+                'client_id',
+                clientId
+            )
+            .order(
+                'expense_date',
+                {
+                    ascending: false,
+                    nullsFirst: false
+                }
+            )
+            .order(
+                'id',
+                {
+                    ascending: false
+                }
+            );
+
+    if (error) {
+
+        alert(
+            'تعذر تحميل مصروفات الموكل: ' +
+            error.message
+        );
+
+        return;
+    }
+
+    const existing =
+        document.getElementById(
+            'clientDetailsDynamicModal'
+        );
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const total =
+        (expenses || []).reduce(
+            (
+                sum,
+                expense
+            ) =>
+                sum +
+                Number(
+                    expense.amount || 0
+                ),
+            0
+        );
+
+    const overlay =
+        document.createElement(
+            'div'
+        );
+
+    overlay.id =
+        'clientDetailsDynamicModal';
+
+    overlay.className =
+        'details-overlay';
+
+    const expensesHtml =
+        expenses && expenses.length
+            ? `
+                <table class="details-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>المبلغ</th>
+                            <th>التاريخ</th>
+                            <th>سبب المصروف</th>
+                            <th>المسؤول / الدافع</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        ${expenses.map(
+                            expense => `
+                                <tr>
+
+                                    <td>
+                                        ${Number(
+                                            expense.amount || 0
+                                        ).toLocaleString(
+                                            'ar-EG',
+                                            {
+                                                minimumFractionDigits: 2
+                                            }
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(
+                                            expense.expense_date ||
+                                            '-'
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(
+                                            expense.reason ||
+                                            '-'
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHtml(
+                                            expense.spender ||
+                                            '-'
+                                        )}
+                                    </td>
+
+                                </tr>
+                            `
+                        ).join('')}
+
+                    </tbody>
+
+                </table>
+
+                <div
+                    style="
+                        margin-top:15px;
+                        padding:12px;
+                        background:#f8fafc;
+                        border:1px solid #e2e8f0;
+                        border-radius:8px;
+                        font-weight:bold;
+                    "
+                >
+                    إجمالي المصروفات:
+                    ${total.toLocaleString(
+                        'ar-EG',
+                        {
+                            minimumFractionDigits: 2
+                        }
+                    )}
+                </div>
+              `
+            : `
+                <div class="details-notes">
+                    لا توجد مصروفات مسجلة لهذا الموكل.
+                </div>
+              `;
+
+    overlay.innerHTML = `
+
+        <div class="details-modal">
+
+            <div class="details-modal-header">
+
+                <div>
+
+                    <h2 style="margin:0;">
+                        بيانات الموكل
+                    </h2>
+
+                    <small style="color:#64748b;">
+                        ${escapeHtml(
+                            client.name || ''
+                        )}
+                    </small>
+
+                </div>
+
+                <button
+                    class="btn btn-sm btn-secondary"
+                    onclick="closeDynamicClientDetails()"
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                    إغلاق
+                </button>
+
+            </div>
+
+            <div class="details-grid">
+
+                <div class="details-item">
+                    <label>اسم الموكل</label>
+                    <strong>
+                        ${escapeHtml(
+                            client.name ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>رقم الهاتف</label>
+                    <strong>
+                        ${escapeHtml(
+                            client.phone ||
+                            '-'
+                        )}
+                    </strong>
+                </div>
+
+            </div>
+
+            ${
+                client.id_card_url
+                    ? `
+                        <div
+                            style="
+                                margin-bottom:20px;
+                            "
+                        >
+                            <a
+                                href="${client.id_card_url}"
+                                target="_blank"
+                                class="btn btn-info"
+                            >
+                                <i class="fa-solid fa-id-card"></i>
+                                عرض صورة البطاقة
+                            </a>
+                        </div>
+                      `
+                    : ''
+            }
+
+            <h3>
+                مصروفات الموكل
+            </h3>
+
+            ${expensesHtml}
+
+            <div
+                class="details-actions"
+                style="margin-top:20px;"
+            >
+
+                ${
+                    isAdmin()
+                        ? `
+                            <button
+                                class="btn btn-warning"
+                                onclick="
+                                    closeDynamicClientDetails();
+                                    openEditClientModal(${client.id});
+                                "
+                            >
+                                <i class="fa-solid fa-pen"></i>
+                                تعديل الموكل
+                            </button>
+                          `
+                        : ''
+                }
+
+            </div>
+
+        </div>
+
+    `;
+
+    overlay.addEventListener(
+        'click',
+        event => {
+
+            if (
+                event.target === overlay
+            ) {
+                closeDynamicClientDetails();
+            }
+        }
+    );
+
+    document.body.appendChild(
+        overlay
+    );
+}
+
+function closeDynamicClientDetails() {
+
+    const modal =
+        document.getElementById(
+            'clientDetailsDynamicModal'
+        );
+
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function openEditClientModal(
+    clientId
+) {
 
     if (!requireAdmin()) return;
 
+    const client =
+        allClientsCache.find(
+            c => c.id === clientId
+        );
+
+    if (!client) return;
+
+    const existing =
+        document.getElementById(
+            'clientEditDynamicModal'
+        );
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const {
+        data: expenses,
+        error
+    } =
+        await db
+            .from('client_expenses')
+            .select('*')
+            .eq(
+                'client_id',
+                clientId
+            )
+            .order(
+                'expense_date',
+                {
+                    ascending: true,
+                    nullsFirst: false
+                }
+            )
+            .order(
+                'id',
+                {
+                    ascending: true
+                }
+            );
+
+    if (error) {
+
+        alert(
+            'تعذر تحميل المصروفات: ' +
+            error.message
+        );
+
+        return;
+    }
+
+    const overlay =
+        document.createElement(
+            'div'
+        );
+
+    overlay.id =
+        'clientEditDynamicModal';
+
+    overlay.className =
+        'details-overlay';
+
+    overlay.innerHTML = `
+
+        <div class="details-modal">
+
+            <div class="details-modal-header">
+
+                <h2 style="margin:0;">
+                    تعديل بيانات الموكل
+                </h2>
+
+                <button
+                    class="btn btn-sm btn-secondary"
+                    onclick="closeClientEditDynamicModal()"
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                    إغلاق
+                </button>
+
+            </div>
+
+            <input
+                type="hidden"
+                id="dynamicEditClientId"
+                value="${client.id}"
+            >
+
+            <div class="details-grid">
+
+                <div class="details-item">
+
+                    <label>
+                        اسم الموكل
+                    </label>
+
+                    <input
+                        type="text"
+                        id="dynamicEditClientName"
+                        value="${escapeHtml(
+                            client.name || ''
+                        )}"
+                        style="
+                            width:100%;
+                            padding:10px;
+                            border:1px solid #cbd5e1;
+                            border-radius:7px;
+                        "
+                    >
+
+                </div>
+
+                <div class="details-item">
+
+                    <label>
+                        رقم الهاتف
+                    </label>
+
+                    <input
+                        type="text"
+                        id="dynamicEditClientPhone"
+                        value="${escapeHtml(
+                            client.phone || ''
+                        )}"
+                        style="
+                            width:100%;
+                            padding:10px;
+                            border:1px solid #cbd5e1;
+                            border-radius:7px;
+                        "
+                    >
+
+                </div>
+
+            </div>
+
+            <h3>
+                المصروفات
+            </h3>
+
+            <div style="overflow-x:auto;">
+
+                <table class="details-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>المبلغ</th>
+                            <th>التاريخ</th>
+                            <th>السبب</th>
+                            <th>المسؤول / الدافع</th>
+                            <th>إجراء</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="dynamicEditClientExpensesBody">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div
+                style="
+                    margin-top:15px;
+                    display:flex;
+                    gap:8px;
+                    flex-wrap:wrap;
+                "
+            >
+
+                <button
+                    type="button"
+                    class="btn btn-info"
+                    onclick="addClientExpenseRow(
+                        {},
+                        'dynamicEditClientExpensesBody'
+                    )"
+                >
+                    <i class="fa-solid fa-plus"></i>
+                    إضافة مصروف
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-success"
+                    onclick="saveClientUpdate()"
+                >
+                    <i class="fa-solid fa-check"></i>
+                    حفظ التعديلات
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+    document.body.appendChild(
+        overlay
+    );
+
+    const body =
+        document.getElementById(
+            'dynamicEditClientExpensesBody'
+        );
+
+    if (body) {
+
+        (expenses || []).forEach(
+            expense =>
+                addClientExpenseRow(
+                    expense,
+                    'dynamicEditClientExpensesBody'
+                )
+        );
+    }
+}
+
+function closeClientEditDynamicModal() {
+
+    const modal =
+        document.getElementById(
+            'clientEditDynamicModal'
+        );
+
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function saveClientUpdate() {
+
+    if (!requireAdmin()) return;
+
+    const clientId =
+        document.getElementById(
+            'dynamicEditClientId'
+        )?.value;
+
+    const name =
+        document.getElementById(
+            'dynamicEditClientName'
+        )?.value
+        ?.trim();
+
+    const phone =
+        document.getElementById(
+            'dynamicEditClientPhone'
+        )?.value
+        ?.trim();
+
+    if (!clientId) {
+
+        return alert(
+            'لم يتم تحديد الموكل.'
+        );
+    }
+
+    if (!name || !phone) {
+
+        return alert(
+            'اسم الموكل ورقم الهاتف مطلوبان.'
+        );
+    }
+
+    const {
+        error: clientError
+    } =
+        await db
+            .from('clients')
+            .update({
+                name,
+                phone
+            })
+            .eq(
+                'id',
+                clientId
+            );
+
+    if (clientError) {
+
+        return alert(
+            'حدث خطأ أثناء تحديث الموكل: ' +
+            clientError.message
+        );
+    }
+
+    const body =
+        document.getElementById(
+            'dynamicEditClientExpensesBody'
+        );
+
+    if (body) {
+
+        const rows =
+            Array.from(
+                body.querySelectorAll(
+                    'tr'
+                )
+            );
+
+        for (
+            const row of rows
+        ) {
+
+            const expenseId =
+                row.dataset.expenseId ||
+                null;
+
+            const amount =
+                row.querySelector(
+                    '.client-expense-amount'
+                )?.value;
+
+            const expense_date =
+                row.querySelector(
+                    '.client-expense-date'
+                )?.value;
+
+            const reason =
+                row.querySelector(
+                    '.client-expense-reason'
+                )?.value
+                ?.trim() || '';
+
+            const spender =
+                row.querySelector(
+                    '.client-expense-spender'
+                )?.value
+                ?.trim() || '';
+
+            const hasData =
+                amount ||
+                expense_date ||
+                reason ||
+                spender;
+
+            if (!hasData) {
+                continue;
+            }
+
+            const expenseData = {
+
+                amount:
+                    amount
+                        ? Number(amount)
+                        : 0,
+
+                expense_date:
+                    expense_date ||
+                    null,
+
+                reason,
+
+                spender
+            };
+
+            if (expenseId) {
+
+                const {
+                    error: expenseUpdateError
+                } =
+                    await db
+                        .from(
+                            'client_expenses'
+                        )
+                        .update(
+                            expenseData
+                        )
+                        .eq(
+                            'id',
+                            expenseId
+                        )
+                        .eq(
+                            'client_id',
+                            clientId
+                        );
+
+                if (
+                    expenseUpdateError
+                ) {
+
+                    return alert(
+                        'تم تحديث الموكل، لكن حدث خطأ أثناء تحديث مصروف: ' +
+                        expenseUpdateError.message
+                    );
+                }
+
+            } else {
+
+                const {
+                    error: expenseInsertError
+                } =
+                    await db
+                        .from(
+                            'client_expenses'
+                        )
+                        .insert([
+                            {
+                                client_id:
+                                    Number(
+                                        clientId
+                                    ),
+
+                                ...expenseData
+                            }
+                        ]);
+
+                if (
+                    expenseInsertError
+                ) {
+
+                    return alert(
+                        'تم تحديث الموكل، لكن حدث خطأ أثناء إضافة المصروف: ' +
+                        expenseInsertError.message
+                    );
+                }
+            }
+        }
+    }
+
+    closeClientEditDynamicModal();
+
+    await fetchClients();
+}
+
+async function deleteClient(
+    id
+) {
+
+    if (!requireAdmin()) return;
 
     if (
         !confirm(
@@ -3009,13 +5403,16 @@ async function deleteClient(id) {
         return;
     }
 
-
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('clients')
             .delete()
-            .eq('id', id);
-
+            .eq(
+                'id',
+                id
+            );
 
     if (error) {
 
@@ -3030,22 +5427,27 @@ async function deleteClient(id) {
     }
 }
 
-
-
+/* =========================================================
+   TASKS
+========================================================= */
 
 async function fetchTasks() {
 
     if (!currentUser) return;
 
-
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await db
             .from('tasks')
             .select('*')
-            .order('id', {
-                ascending: false
-            });
-
+            .order(
+                'id',
+                {
+                    ascending: false
+                }
+            );
 
     if (error) {
 
@@ -3057,26 +5459,22 @@ async function fetchTasks() {
         return;
     }
 
-
     const list =
         document.getElementById(
             'tasksList'
         );
-
 
     const countStat =
         document.getElementById(
             'stat-tasks-count'
         );
 
-
     const activeTasks =
         data
             ? data.filter(
                 t => !t.completed
-              )
+            )
             : [];
-
 
     if (countStat) {
 
@@ -3084,9 +5482,7 @@ async function fetchTasks() {
             activeTasks.length;
     }
 
-
     if (!list) return;
-
 
     if (
         !data ||
@@ -3099,238 +5495,246 @@ async function fetchTasks() {
         return;
     }
 
-
     const today =
         new Date();
 
-
     today.setHours(
-        0, 0, 0, 0
+        0,
+        0,
+        0,
+        0
     );
 
-
     list.innerHTML =
-        data.map(t => {
+        data
+            .map(t => {
 
-            let isOverdue = false;
-            let dueDateText = '';
+                let isOverdue = false;
+                let dueDateText = '';
 
+                if (t.due_date) {
 
-            if (t.due_date) {
+                    const dueDate =
+                        new Date(
+                            t.due_date
+                        );
 
-                const dueDate =
-                    new Date(
-                        t.due_date
+                    dueDate.setHours(
+                        0,
+                        0,
+                        0,
+                        0
                     );
 
+                    isOverdue =
+                        !t.completed &&
+                        today > dueDate;
 
-                dueDate.setHours(
-                    0, 0, 0, 0
-                );
+                    dueDateText =
+                        `تاريخ التنفيذ: ${t.due_date}`;
+                }
 
-
-                isOverdue =
-                    !t.completed &&
-                    today > dueDate;
-
-
-                dueDateText =
-                    `تاريخ التنفيذ: ${t.due_date}`;
-            }
-
-
-            const bgColor =
-                t.completed
-                    ? '#f8fafc'
-                    : (
-                        isOverdue
-                            ? '#fef2f2'
-                            : '#ffffff'
-                      );
-
-
-            const borderColor =
-                isOverdue
-                    ? '#ef4444'
-                    : '#e2e8f0';
-
-
-            const adminActions =
-                isAdmin()
-                    ? `
-
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-warning"
-                            onclick="editTaskInline(
-                                ${t.id},
-                                '${String(t.title || '')
-                                    .replace(/'/g, "\\'")}',
-                                '${t.due_date || ''}'
-                            )">
-
-                            <i class="fa-solid fa-pen"></i>
-                            تعديل
-
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn btn-sm ${
-                                t.completed
-                                    ? 'btn-secondary'
-                                    : 'btn-success'
-                            }"
-                            onclick="toggleCompleteTask(
-                                ${t.id},
-                                ${t.completed}
-                            )">
-
-                            ${
-                                t.completed
-                                    ? '<i class="fa-solid fa-rotate-left"></i> إرجاع'
-                                    : '<i class="fa-solid fa-check"></i> تمت'
-                            }
-
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-danger"
-                            onclick="deleteTask(${t.id})">
-
-                            <i class="fa-solid fa-trash"></i>
-                            حذف
-
-                        </button>
-
-                      `
-                    : `
-                        <span class="badge badge-done">
-                            عرض فقط
-                        </span>
-                      `;
-
-
-            return `
-
-                <li
-                    id="task-item-${t.id}"
-                    style="
-                        padding:12px;
-                        border:1px solid ${borderColor};
-                        border-right:${
+                const bgColor =
+                    t.completed
+                        ? '#f8fafc'
+                        : (
                             isOverdue
-                                ? '5px solid #ef4444'
-                                : '1px solid ' + borderColor
-                        };
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        background:${bgColor};
-                        margin-bottom:8px;
-                        border-radius:6px;
-                    "
-                >
+                                ? '#fef2f2'
+                                : '#ffffff'
+                          );
 
-                    <div style="flex-grow:1;">
+                const borderColor =
+                    isOverdue
+                        ? '#ef4444'
+                        : '#e2e8f0';
 
-                        <span style="${
-                            t.completed
-                                ? 'text-decoration:line-through;color:#94a3b8;'
-                                : 'font-weight:500;'
-                        }">
+                const safeTitle =
+                    String(
+                        t.title || ''
+                    )
+                        .replace(
+                            /\\/g,
+                            '\\\\'
+                        )
+                        .replace(
+                            /'/g,
+                            "\\'"
+                        );
 
-                            📌 ${t.title || ''}
+                const adminActions =
+                    isAdmin()
+                        ? `
 
-                        </span>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-warning"
+                                onclick="editTaskInline(
+                                    ${t.id},
+                                    '${safeTitle}',
+                                    '${t.due_date || ''}'
+                                )"
+                            >
 
+                                <i class="fa-solid fa-pen"></i>
+                                تعديل
 
-                        ${
-                            dueDateText
-                                ? `
+                            </button>
 
-                                    <div
-                                        style="
-                                            font-size:0.8rem;
-                                            color:${
-                                                isOverdue
-                                                    ? '#dc2626'
-                                                    : '#64748b'
-                                            };
-                                            margin-top:4px;
-                                            font-weight:${
-                                                isOverdue
-                                                    ? 'bold'
-                                                    : 'normal'
-                                            };
-                                        "
-                                    >
+                            <button
+                                type="button"
+                                class="btn btn-sm ${
+                                    t.completed
+                                        ? 'btn-secondary'
+                                        : 'btn-success'
+                                }"
+                                onclick="toggleCompleteTask(
+                                    ${t.id},
+                                    ${t.completed}
+                                )"
+                            >
 
-                                        📅 ${dueDateText}
+                                ${
+                                    t.completed
+                                        ? '<i class="fa-solid fa-rotate-left"></i> إرجاع'
+                                        : '<i class="fa-solid fa-check"></i> تمت'
+                                }
 
-                                        ${
-                                            isOverdue
-                                                ? '(متأخرة!)'
-                                                : ''
-                                        }
+                            </button>
 
-                                    </div>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-danger"
+                                onclick="deleteTask(${t.id})"
+                            >
 
-                                  `
-                                : ''
-                        }
+                                <i class="fa-solid fa-trash"></i>
+                                حذف
 
-                    </div>
+                            </button>
 
+                          `
+                        : `
+                            <span class="badge badge-done">
+                                عرض فقط
+                            </span>
+                          `;
 
-                    <div
+                return `
+
+                    <li
+                        id="task-item-${t.id}"
                         style="
+                            padding:12px;
+                            border:1px solid ${borderColor};
+                            border-right:${
+                                isOverdue
+                                    ? '5px solid #ef4444'
+                                    : '1px solid ' +
+                                      borderColor
+                            };
                             display:flex;
-                            gap:8px;
+                            justify-content:space-between;
+                            align-items:center;
+                            background:${bgColor};
+                            margin-bottom:8px;
+                            border-radius:6px;
                         "
                     >
 
-                        ${adminActions}
+                        <div style="flex-grow:1;">
 
-                    </div>
+                            <span style="${
+                                t.completed
+                                    ? 'text-decoration:line-through;color:#94a3b8;'
+                                    : 'font-weight:500;'
+                            }">
 
-                </li>
+                                📌 ${escapeHtml(
+                                    t.title || ''
+                                )}
 
-            `;
+                            </span>
 
-        }).join('');
+                            ${
+                                dueDateText
+                                    ? `
+
+                                        <div
+                                            style="
+                                                font-size:0.8rem;
+                                                color:${
+                                                    isOverdue
+                                                        ? '#dc2626'
+                                                        : '#64748b'
+                                                };
+                                                margin-top:4px;
+                                                font-weight:${
+                                                    isOverdue
+                                                        ? 'bold'
+                                                        : 'normal'
+                                                };
+                                            "
+                                        >
+
+                                            📅 ${escapeHtml(
+                                                dueDateText
+                                            )}
+
+                                            ${
+                                                isOverdue
+                                                    ? '(متأخرة!)'
+                                                    : ''
+                                            }
+
+                                        </div>
+
+                                      `
+                                    : ''
+                            }
+
+                        </div>
+
+                        <div
+                            style="
+                                display:flex;
+                                gap:8px;
+                            "
+                        >
+
+                            ${adminActions}
+
+                        </div>
+
+                    </li>
+
+                `;
+            })
+            .join('');
 }
-
 
 async function addTask() {
 
     if (!requireLogin()) return;
-
 
     const taskInput =
         document.getElementById(
             'taskTitle'
         );
 
-
     const dueDateInput =
         document.getElementById(
             'taskDueDate'
         );
-
 
     const title =
         taskInput
             ? taskInput.value.trim()
             : '';
 
-
     const dueDate =
         dueDateInput
             ? dueDateInput.value
             : null;
-
 
     if (!title) {
 
@@ -3339,7 +5743,6 @@ async function addTask() {
         );
     }
 
-
     if (!dueDate) {
 
         return alert(
@@ -3347,25 +5750,21 @@ async function addTask() {
         );
     }
 
-
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('tasks')
-            .insert([{
-
-                title: title,
-
-                assigned_to: 'المكتب',
-
-                completed: false,
-
-                due_date: dueDate,
-
-                created_at:
-                    new Date().toISOString()
-
-            }]);
-
+            .insert([
+                {
+                    title: title,
+                    assigned_to: 'المكتب',
+                    completed: false,
+                    due_date: dueDate,
+                    created_at:
+                        new Date().toISOString()
+                }
+            ]);
 
     if (error) {
 
@@ -3374,27 +5773,22 @@ async function addTask() {
             error
         );
 
-
         return alert(
             'خطأ أثناء الإضافة: ' +
             error.message
         );
     }
 
-
     if (taskInput) {
         taskInput.value = '';
     }
-
 
     if (dueDateInput) {
         dueDateInput.value = '';
     }
 
-
     fetchTasks();
 }
-
 
 function editTaskInline(
     taskId,
@@ -3404,15 +5798,12 @@ function editTaskInline(
 
     if (!requireAdmin()) return;
 
-
     const li =
         document.getElementById(
             `task-item-${taskId}`
         );
 
-
     if (!li) return;
-
 
     li.innerHTML = `
 
@@ -3428,7 +5819,9 @@ function editTaskInline(
             <input
                 type="text"
                 id="edit-task-title-${taskId}"
-                value="${currentTitle}"
+                value="${escapeHtml(
+                    currentTitle
+                )}"
                 class="form-control"
                 style="flex:2;"
             >
@@ -3436,13 +5829,14 @@ function editTaskInline(
             <input
                 type="date"
                 id="edit-task-date-${taskId}"
-                value="${currentDueDate}"
+                value="${escapeHtml(
+                    currentDueDate
+                )}"
                 class="form-control"
                 style="flex:1;"
             >
 
         </div>
-
 
         <div
             style="
@@ -3455,20 +5849,21 @@ function editTaskInline(
             <button
                 type="button"
                 class="btn btn-sm btn-success"
-                onclick="saveTaskUpdate(${taskId})">
+                onclick="saveTaskUpdate(${taskId})"
+            >
 
                 <i class="fa-solid fa-check"></i>
                 حفظ
 
             </button>
 
-
             <button
                 type="button"
                 class="btn btn-sm btn-secondary"
-                onclick="fetchTasks()">
+                onclick="fetchTasks()"
+            >
 
-     إلغاء
+                إلغاء
 
             </button>
 
@@ -3477,7 +5872,9 @@ function editTaskInline(
     `;
 }
 
-async function saveTaskUpdate(taskId) {
+async function saveTaskUpdate(
+    taskId
+) {
 
     if (!requireAdmin()) return;
 
@@ -3502,25 +5899,32 @@ async function saveTaskUpdate(taskId) {
             : null;
 
     if (!newTitle) {
+
         return alert(
             'عنوان المهمة لا يمكن أن يكون فارغاً'
         );
     }
 
     if (!newDueDate) {
+
         return alert(
             'برجاء اختيار تاريخ التنفيذ'
         );
     }
 
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('tasks')
             .update({
                 title: newTitle,
                 due_date: newDueDate
             })
-            .eq('id', taskId);
+            .eq(
+                'id',
+                taskId
+            );
 
     if (error) {
 
@@ -3535,9 +5939,6 @@ async function saveTaskUpdate(taskId) {
     }
 }
 
-
-
-
 async function toggleCompleteTask(
     taskId,
     currentStatus
@@ -3545,13 +5946,19 @@ async function toggleCompleteTask(
 
     if (!requireAdmin()) return;
 
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('tasks')
             .update({
-                completed: !currentStatus
+                completed:
+                    !currentStatus
             })
-            .eq('id', taskId);
+            .eq(
+                'id',
+                taskId
+            );
 
     if (error) {
 
@@ -3566,10 +5973,9 @@ async function toggleCompleteTask(
     }
 }
 
-
-
-
-async function deleteTask(taskId) {
+async function deleteTask(
+    taskId
+) {
 
     if (!requireAdmin()) return;
 
@@ -3581,11 +5987,16 @@ async function deleteTask(taskId) {
         return;
     }
 
-    const { error } =
+    const {
+        error
+    } =
         await db
             .from('tasks')
             .delete()
-            .eq('id', taskId);
+            .eq(
+                'id',
+                taskId
+            );
 
     if (error) {
 
@@ -3600,17 +6011,20 @@ async function deleteTask(taskId) {
     }
 }
 
-
-
+/* =========================================================
+   REALTIME
+========================================================= */
 
 function startRealtime() {
 
     if (realtimeStarted) return;
 
-    realtimeStarted = true;
+    realtimeStarted =
+        true;
 
-
-    db.channel('tasks-changes')
+    db.channel(
+        'tasks-changes'
+    )
         .on(
             'postgres_changes',
             {
@@ -3622,8 +6036,9 @@ function startRealtime() {
         )
         .subscribe();
 
-
-    db.channel('cases-changes')
+    db.channel(
+        'cases-changes'
+    )
         .on(
             'postgres_changes',
             {
@@ -3635,8 +6050,23 @@ function startRealtime() {
         )
         .subscribe();
 
+    db.channel(
+        'case-sessions-changes'
+    )
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'case_sessions'
+            },
+            () => fetchCases()
+        )
+        .subscribe();
 
-    db.channel('clients-changes')
+    db.channel(
+        'clients-changes'
+    )
         .on(
             'postgres_changes',
             {
@@ -3648,8 +6078,23 @@ function startRealtime() {
         )
         .subscribe();
 
+    db.channel(
+        'client-expenses-changes'
+    )
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'client_expenses'
+            },
+            () => fetchClients()
+        )
+        .subscribe();
 
-    db.channel('companies-changes')
+    db.channel(
+        'companies-changes'
+    )
         .on(
             'postgres_changes',
             {
@@ -3661,7 +6106,9 @@ function startRealtime() {
         )
         .subscribe();
 
-    db.channel('access-requests-changes')
+    db.channel(
+        'access-requests-changes'
+    )
         .on(
             'postgres_changes',
             {
@@ -3673,9 +6120,6 @@ function startRealtime() {
         )
         .subscribe();
 }
-
-
-
 
 async function loadAllData() {
 
@@ -3690,20 +6134,17 @@ async function loadAllData() {
     ]);
 }
 
-
-
 async function initializeApp() {
 
     createLoginScreen();
 
     showLoginScreen();
 
-
     const {
         data,
         error
-    } = await db.auth.getSession();
-
+    } =
+        await db.auth.getSession();
 
     if (error) {
 
@@ -3715,28 +6156,28 @@ async function initializeApp() {
         return;
     }
 
-
     const session =
-        data ? data.session : null;
+        data
+            ? data.session
+            : null;
 
-
-    if (!session || !session.user) {
+    if (
+        !session ||
+        !session.user
+    ) {
 
         showLoginScreen();
 
         return;
     }
 
-
     currentUser =
         session.user;
-
 
     const profileLoaded =
         await loadCurrentProfile(
             currentUser.id
         );
-
 
     if (!profileLoaded) {
 
@@ -3755,7 +6196,8 @@ async function initializeApp() {
         if (loginError) {
 
             loginError.innerText =
-                profileLoadError || 'بيانات المستخدم غير مكتملة.';
+                profileLoadError ||
+                'بيانات المستخدم غير مكتملة.';
 
             loginError.style.display =
                 'block';
@@ -3763,7 +6205,6 @@ async function initializeApp() {
 
         return;
     }
-
 
     updateUserInterface();
 
@@ -3773,9 +6214,6 @@ async function initializeApp() {
 
     startRealtime();
 }
-
-
-
 
 document.addEventListener(
     'DOMContentLoaded',
@@ -3787,7 +6225,9 @@ document.addEventListener(
             () => {
 
                 if (currentUser) {
+
                     fetchTasks();
+
                     loadAccessRequests();
                 }
 

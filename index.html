@@ -23,10 +23,6 @@
             overflow: hidden;
         }
 
-        /* =========================
-           LOGIN
-        ========================= */
-
         .login-screen {
             position: fixed;
             inset: 0;
@@ -38,9 +34,7 @@
             padding: 20px;
         }
 
-        .login-screen.hidden {
-            display: none;
-        }
+        .login-screen.hidden { display: none; }
 
         .login-box {
             width: 100%;
@@ -65,554 +59,141 @@
             font-size: 32px;
         }
 
-        .login-box h2 {
-            color: #0f172a;
-            margin-bottom: 7px;
-        }
-
-        .login-box > p {
-            color: #64748b;
-            margin-bottom: 25px;
-        }
-
-        .login-group {
-            text-align: right;
-            margin-bottom: 15px;
-        }
-
-        .login-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: #475569;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
+        .login-box h2 { color: #0f172a; margin-bottom: 7px; }
+        .login-box > p { color: #64748b; margin-bottom: 25px; }
+        .login-group { text-align: right; margin-bottom: 15px; }
+        .login-group label { display: block; margin-bottom: 6px; color: #475569; font-weight: 600; font-size: 0.9rem; }
         .login-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            outline: none;
-            font-size: 15px;
-            direction: ltr;
-            text-align: left;
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+            outline: none; font-size: 15px; direction: ltr; text-align: left;
         }
-
-        .login-group input:focus {
-            border-color: #0284c7;
-        }
+        .login-group input:focus { border-color: #0284c7; }
 
         .login-btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            background-color: #0284c7;
-            color: #ffffff;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: opacity 0.2s;
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            background-color: #0284c7; color: #ffffff; font-size: 15px; font-weight: 700;
+            cursor: pointer; margin-top: 10px; transition: opacity 0.2s;
         }
+        .login-btn:hover { opacity: 0.85; }
 
-        .login-btn:hover {
-            opacity: 0.85;
-        }
-
-        .login-error {
-            color: #dc2626 !important;
-            margin-top: 15px !important;
-            margin-bottom: 0 !important;
-            font-size: 14px;
-        }
-
-        .login-link {
-            display: inline-block;
-            margin-top: 18px;
-            color: #0284c7;
-            font-weight: 700;
-            cursor: pointer;
-            background: none;
-            border: 0;
-            font-size: 14px;
-        }
-
-        .auth-form[hidden] {
-            display: none;
-        }
-
-        /* =========================
-           SIDEBAR
-        ========================= */
+        .login-error { color: #dc2626 !important; margin-top: 15px !important; margin-bottom: 0 !important; font-size: 14px; }
+        .login-link { display: inline-block; margin-top: 18px; color: #0284c7; font-weight: 700; cursor: pointer; background: none; border: 0; font-size: 14px; }
+        .auth-form[hidden] { display: none; }
 
         .sidebar {
-            width: 260px;
-            background-color: #0f172a;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            padding: 20px 0;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+            width: 260px; background-color: #0f172a; color: #ffffff;
+            display: flex; flex-direction: column; padding: 20px 0; box-shadow: 4px 0 10px rgba(0,0,0,0.05);
         }
-
         .sidebar .brand {
-            padding: 0 20px 20px 20px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            border-bottom: 1px solid #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #38bdf8;
+            padding: 0 20px 20px 20px; font-size: 1.2rem; font-weight: 700;
+            border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; color: #38bdf8;
         }
-
-        .sidebar .menu {
-            list-style: none;
-            margin-top: 20px;
-        }
-
+        .sidebar .menu { list-style: none; margin-top: 20px; }
         .sidebar .menu li a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 20px;
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
+            display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+            color: #94a3b8; text-decoration: none; font-size: 0.95rem; transition: all 0.3s ease;
+        }
+        .sidebar .menu li a:hover, .sidebar .menu li a.active {
+            background-color: #1e293b; color: #38bdf8; border-right: 4px solid #38bdf8;
         }
 
-        .sidebar .menu li a:hover,
-        .sidebar .menu li a.active {
-            background-color: #1e293b;
-            color: #38bdf8;
-            border-right: 4px solid #38bdf8;
-        }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .header { background-color: #ffffff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .header .user-info { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+        .logout-btn { border: none; background: transparent; color: #ef4444; cursor: pointer; font-size: 14px; margin-right: 15px; font-family: 'Tajawal', sans-serif; }
+        .logout-btn:hover { color: #b91c1c; }
 
-        /* =========================
-           MAIN
-        ========================= */
+        .content { padding: 30px; }
+        .page-section { display: none; }
+        .page-section.active { display: block; }
 
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        .header {
-            background-color: #ffffff;
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .header .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 500;
-        }
-
-        .logout-btn {
-            border: none;
-            background: transparent;
-            color: #ef4444;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 15px;
-            font-family: 'Tajawal', sans-serif;
-        }
-
-        .logout-btn:hover {
-            color: #b91c1c;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .page-section {
-            display: none;
-        }
-
-        .page-section.active {
-            display: block;
-        }
-
-        /* =========================
-           STATS
-        ========================= */
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border: 1px solid #e2e8f0;
+            background-color: #ffffff; padding: 20px; border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 15px; border: 1px solid #e2e8f0;
         }
+        .stat-card .icon { width: 50px; height: 50px; border-radius: 10px; background-color: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .stat-card.company-card .icon { background-color: #f0fdf4; color: #16a34a; }
+        .stat-card .info h3 { font-size: 0.85rem; color: #64748b; margin-bottom: 5px; }
+        .stat-card .info p { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
 
-        .stat-card .icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            background-color: #e0f2fe;
-            color: #0284c7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
+        .panel { background-color: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .panel-header h2 { font-size: 1.1rem; color: #0f172a; }
 
-        .stat-card.company-card .icon {
-            background-color: #f0fdf4;
-            color: #16a34a;
-        }
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+        th { background-color: #f8fafc; color: #475569; font-weight: 700; }
 
-        .stat-card .info h3 {
-            font-size: 0.85rem;
-            color: #64748b;
-            margin-bottom: 5px;
-        }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+        .badge-new { background-color: #e0f2fe; color: #0369a1; }
+        .badge-active { background-color: #dcfce7; color: #15803d; }
+        .badge-pending { background-color: #fef3c7; color: #b45309; }
+        .badge-done { background-color: #f1f5f9; color: #475569; }
+        .badge-archived, .badge-suspended { background-color: #fee2e2; color: #b91c1c; }
 
-        .stat-card .info p {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: opacity 0.2s; text-decoration: none; }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background-color: #0284c7; color: #ffffff; }
+        .btn-info { background-color: #0284c7; color: #ffffff; }
+        .btn-warning { background-color: #f59e0b; color: #ffffff; }
+        .btn-danger { background-color: #ef4444; color: #ffffff; }
+        .btn-success { background-color: #16a34a; color: #ffffff; }
+        .btn-secondary { background-color: #64748b; color: #ffffff; }
+        .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
 
-        /* =========================
-           PANELS
-        ========================= */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 0.85rem; color: #475569; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #0284c7; }
 
-        .panel {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background-color: #ffffff; padding: 25px; border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
 
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+        .odoo-tabs { display: flex; border-bottom: 2px solid #e2e8f0; margin-top: 20px; margin-bottom: 15px; }
+        .odoo-tab-btn { padding: 10px 20px; background: none; border: none; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .odoo-tab-btn.active { color: #0284c7; border-bottom-color: #0284c7; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        .panel-header h2 {
-            font-size: 1.1rem;
-            color: #0f172a;
-        }
+        .company-logo-preview { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid #e2e8f0; }
 
-        /* =========================
-           TABLE
-        ========================= */
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: right;
-        }
-
-        th, td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 0.9rem;
-        }
-
-        th {
-            background-color: #f8fafc;
-            color: #475569;
-            font-weight: 700;
-        }
-
-        /* =========================
-           BADGES
-        ========================= */
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            display: inline-block;
-        }
-
-        .badge-new {
-            background-color: #e0f2fe;
-            color: #0369a1;
-        }
-
-        .badge-active {
-            background-color: #dcfce7;
-            color: #15803d;
-        }
-
-        .badge-pending {
-            background-color: #fef3c7;
-            color: #b45309;
-        }
-
-        .badge-done {
-            background-color: #f1f5f9;
-            color: #475569;
-        }
-
-        .badge-archived,
-        .badge-suspended {
-            background-color: #fee2e2;
-            color: #b91c1c;
-        }
-
-        /* =========================
-           BUTTONS
-        ========================= */
-
-        .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: opacity 0.2s;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            opacity: 0.85;
-        }
-
-        .btn-primary {
-            background-color: #0284c7;
-            color: #ffffff;
-        }
-
-        .btn-info {
-            background-color: #0284c7;
-            color: #ffffff;
-        }
-
-        .btn-warning {
-            background-color: #f59e0b;
-            color: #ffffff;
-        }
-
-        .btn-danger {
-            background-color: #ef4444;
-            color: #ffffff;
-        }
-
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 0.75rem;
-        }
-
-        /* =========================
-           FORMS
-        ========================= */
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group label {
-            font-size: 0.85rem;
-            color: #475569;
-            font-weight: 500;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            padding: 9px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            border-color: #0284c7;
-        }
-
-        /* =========================
-           MODALS
-        ========================= */
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 700px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        /* =========================
-           TABS
-        ========================= */
-
-        .odoo-tabs {
-            display: flex;
-            border-bottom: 2px solid #e2e8f0;
-            margin-top: 20px;
-            margin-bottom: 15px;
-        }
-
-        .odoo-tab-btn {
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            font-weight: 600;
-            color: #64748b;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-        }
-
-        .odoo-tab-btn.active {
-            color: #0284c7;
-            border-bottom-color: #0284c7;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .company-logo-preview {
-            width: 40px;
-            height: 40px;
-            border-radius: 6px;
-            object-fit: cover;
-            border: 1px solid #e2e8f0;
-        }
+        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .details-item { font-size: 0.9rem; }
+        .details-item strong { display: block; color: #64748b; margin-bottom: 3px; font-size: 0.8rem; }
 
         @media (max-width: 768px) {
-            .sidebar {
-                width: 210px;
-            }
-
-            .content {
-                padding: 15px;
-            }
-
-            .header {
-                padding: 12px 15px;
-            }
+            .sidebar { width: 210px; }
+            .content { padding: 15px; }
+            .header { padding: 12px 15px; }
         }
     </style>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
 
-    <!-- =========================
-         LOGIN SCREEN
-    ========================= -->
-
     <div id="loginScreen" class="login-screen">
-
         <div class="login-box">
-
-            <div class="login-icon">
-                <i class="fa-solid fa-scale-balanced"></i>
-            </div>
-
+            <div class="login-icon"><i class="fa-solid fa-scale-balanced"></i></div>
             <h2>مكتب المحاماة</h2>
-
             <p>تسجيل الدخول إلى النظام</p>
 
             <form id="loginForm" class="auth-form">
                 <div class="login-group">
                     <label>اسم المستخدم</label>
-
-                    <input
-                        type="text"
-                        id="loginUsername"
-                        placeholder="اسم المستخدم"
-                        autocomplete="username"
-                        required
-                    >
+                    <input type="text" id="loginUsername" placeholder="اسم المستخدم" autocomplete="username" required>
                 </div>
-
                 <div class="login-group">
                     <label>كلمة المرور</label>
-
-                    <input
-                        type="password"
-                        id="loginPassword"
-                        placeholder="كلمة المرور"
-                        autocomplete="current-password"
-                        required
-                    >
+                    <input type="password" id="loginPassword" placeholder="كلمة المرور" autocomplete="current-password" required>
                 </div>
-
-                <button
-                    type="submit"
-                    id="loginButton"
-                    class="login-btn"
-                >
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    تسجيل الدخول
-                </button>
-
+                <button type="submit" id="loginButton" class="login-btn"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول</button>
                 <p id="loginError" class="login-error"></p>
-
-                <button type="button" class="login-link" onclick="showRegistrationForm()">
-                    إنشاء مستخدم جديد
-                </button>
+                <button type="button" class="login-link" onclick="showRegistrationForm()">إنشاء مستخدم جديد</button>
             </form>
 
             <form id="registrationForm" class="auth-form" hidden>
@@ -620,320 +201,109 @@
                     <label>الاسم بالكامل</label>
                     <input type="text" id="registrationFullName" placeholder="الاسم بالكامل" required>
                 </div>
-
                 <div class="login-group">
                     <label>اسم المستخدم</label>
                     <input type="text" id="registrationUsername" placeholder="اسم المستخدم" autocomplete="username" required>
                 </div>
-
                 <div class="login-group">
                     <label>البريد الإلكتروني</label>
                     <input type="email" id="registrationEmail" placeholder="name@example.com" autocomplete="email" required>
                 </div>
-
                 <div class="login-group">
                     <label>كلمة المرور</label>
                     <input type="password" id="registrationPassword" placeholder="8 أحرف على الأقل" autocomplete="new-password" minlength="8" required>
                 </div>
-
-                <button type="submit" id="registrationButton" class="login-btn">
-                    <i class="fa-solid fa-user-plus"></i>
-                    إرسال طلب الانضمام
-                </button>
-
+                <button type="submit" id="registrationButton" class="login-btn"><i class="fa-solid fa-user-plus"></i> إرسال طلب الانضمام</button>
                 <p id="registrationMessage" class="login-error"></p>
-
-                <button type="button" class="login-link" onclick="showLoginForm()">
-                    العودة لتسجيل الدخول
-                </button>
+                <button type="button" class="login-link" onclick="showLoginForm()">العودة لتسجيل الدخول</button>
             </form>
-
         </div>
-
     </div>
 
-
-    <!-- =========================
-         SIDEBAR
-    ========================= -->
-
     <div class="sidebar">
-
         <div class="brand">
             <i class="fa-solid fa-scale-balanced"></i>
             <span>مكتب المحاماة</span>
         </div>
-
         <ul class="menu">
-
-            <li>
-                <a
-                    href="#"
-                    class="active"
-                    onclick="switchPage('dashboard', this); return false;"
-                >
-                    <i class="fa-solid fa-house"></i>
-                    الرئيسية
-                </a>
-            </li>
-
-            <li>
-                <a
-                    href="#"
-                    onclick="switchPage('companies', this); return false;"
-                >
-                    <i class="fa-solid fa-building"></i>
-                    إدارة الشركات
-                </a>
-            </li>
-
-            <li>
-                <a
-                    href="#"
-                    onclick="switchPage('cases', this); return false;"
-                >
-                    <i class="fa-solid fa-briefcase"></i>
-                    إدارة القضايا
-                </a>
-            </li>
-
-            <li>
-                <a
-                    href="#"
-                    onclick="switchPage('tasks', this); return false;"
-                >
-                    <i class="fa-solid fa-list-check"></i>
-                    المهام والمواعيد
-                </a>
-            </li>
-
-            <li>
-                <a
-                    href="#"
-                    onclick="switchPage('clients', this); return false;"
-                >
-                    <i class="fa-solid fa-users"></i>
-                    إدارة الموكلين
-                </a>
-            </li>
-
+            <li><a href="#" class="active" onclick="switchPage('dashboard', this); return false;"><i class="fa-solid fa-house"></i> الرئيسية</a></li>
+            <li><a href="#" onclick="switchPage('companies', this); return false;"><i class="fa-solid fa-building"></i> إدارة الشركات</a></li>
+            <li><a href="#" onclick="switchPage('cases', this); return false;"><i class="fa-solid fa-briefcase"></i> إدارة القضايا</a></li>
+            <li><a href="#" onclick="switchPage('tasks', this); return false;"><i class="fa-solid fa-list-check"></i> المهام والمواعيد</a></li>
+            <li><a href="#" onclick="switchPage('clients', this); return false;"><i class="fa-solid fa-users"></i> إدارة الموكلين</a></li>
         </ul>
-
     </div>
 
-
-    <!-- =========================
-         MAIN CONTENT
-    ========================= -->
-
     <div class="main-content">
-
         <div class="header">
-
             <div class="user-info">
-
                 <i class="fa-solid fa-circle-user fa-lg"></i>
-
-                <span id="currentUserGreeting">
-                    جاري تحميل المستخدم...
-                </span>
-
-                <button
-                    type="button"
-                    class="logout-btn"
-                    onclick="logoutUser()"
-                >
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    خروج
-                </button>
-
+                <span id="currentUserGreeting">جاري تحميل المستخدم...</span>
+                <button type="button" class="logout-btn" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
             </div>
-
         </div>
-
 
         <div class="content">
 
-            <!-- =========================
-                 DASHBOARD
-            ========================= -->
-
+            <!-- الرئيسية -->
             <div id="dashboard" class="page-section active">
-
                 <div class="stats-grid">
-
                     <div class="stat-card company-card">
-                        <div class="icon">
-                            <i class="fa-solid fa-building"></i>
-                        </div>
-
-                        <div class="info">
-                            <h3>إجمالي الشركات</h3>
-                            <p id="stat-companies-count">0</p>
-                        </div>
+                        <div class="icon"><i class="fa-solid fa-building"></i></div>
+                        <div class="info"><h3>إجمالي الشركات</h3><p id="stat-companies-count">0</p></div>
                     </div>
-
-
                     <div class="stat-card company-card">
-                        <div class="icon">
-                            <i class="fa-solid fa-building-circle-check"></i>
-                        </div>
-
-                        <div class="info">
-                            <h3>الشركات النشطة</h3>
-                            <p id="stat-active-companies-count">0</p>
-                        </div>
+                        <div class="icon"><i class="fa-solid fa-building-circle-check"></i></div>
+                        <div class="info"><h3>الشركات النشطة</h3><p id="stat-active-companies-count">0</p></div>
                     </div>
-
-
                     <div class="stat-card">
-                        <div class="icon">
-                            <i class="fa-solid fa-scale-balanced"></i>
-                        </div>
-
-                        <div class="info">
-                            <h3>القضايا النشطة</h3>
-                            <p id="stat-cases-count">0</p>
-                        </div>
+                        <div class="icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                        <div class="info"><h3>القضايا النشطة</h3><p id="stat-cases-count">0</p></div>
                     </div>
-
-
                     <div class="stat-card">
-                        <div class="icon">
-                            <i class="fa-solid fa-list-check"></i>
-                        </div>
-
-                        <div class="info">
-                            <h3>المهام القادمة</h3>
-                            <p id="stat-tasks-count">0</p>
-                        </div>
+                        <div class="icon"><i class="fa-solid fa-list-check"></i></div>
+                        <div class="info"><h3>المهام القادمة</h3><p id="stat-tasks-count">0</p></div>
                     </div>
-
-
-                    <div class="stat-card">
-                        <div class="icon">
-                            <i class="fa-solid fa-sack-dollar"></i>
-                        </div>
-
-                        <div class="info">
-                            <h3>المبالغ المستحقة</h3>
-                            <p id="stat-pending-fees">0 ج.م</p>
-                        </div>
-                    </div>
-
                 </div>
 
-
                 <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>أحدث القضايا المضافة</h2>
-                    </div>
-
+                    <div class="panel-header"><h2>أحدث القضايا المضافة</h2></div>
                     <table>
-
                         <thead>
                             <tr>
-                                <th>اسم القضية</th>
-                                <th>الموكل</th>
-                                <th>النوع</th>
-                                <th>رقم القضية/السنة</th>
-                                <th>الحالة</th>
-                                <th>إجراءات</th>
+                                <th>اسم القضية</th><th>الموكل</th><th>النوع</th><th>رقم القضية/السنة</th><th>الحالة</th><th>إجراءات</th>
                             </tr>
                         </thead>
-
                         <tbody id="recentCasesTable">
-                            <tr>
-                                <td colspan="6">
-                                    جاري تحميل البيانات...
-                                </td>
-                            </tr>
+                            <tr><td colspan="6">جاري تحميل البيانات...</td></tr>
                         </tbody>
-
                     </table>
-
                 </div>
 
                 <div id="accessRequestsPanel" class="panel" style="display:none;">
-                    <div class="panel-header">
-                        <h2>
-                            <i class="fa-solid fa-user-clock"></i>
-                            طلبات المستخدمين الجديدة
-                        </h2>
-                    </div>
-
+                    <div class="panel-header"><h2><i class="fa-solid fa-user-clock"></i> طلبات المستخدمين الجديدة</h2></div>
                     <div id="accessRequestsList"></div>
                 </div>
-
             </div>
 
-
-            <!-- =========================
-                 COMPANIES
-            ========================= -->
-
+            <!-- الشركات -->
             <div id="companies" class="page-section">
-
                 <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>إضافة شركة جديدة</h2>
-                    </div>
-
+                    <div class="panel-header"><h2>إضافة شركة جديدة</h2></div>
                     <div class="odoo-tabs">
-
-                        <button
-                            class="odoo-tab-btn active"
-                            onclick="switchCompanyTab('compBasicTab', this)"
-                        >
-                            البيانات الأساسية
-                        </button>
-
-                        <button
-                            class="odoo-tab-btn"
-                            onclick="switchCompanyTab('compContactTab', this)"
-                        >
-                            التواصل والعنوان
-                        </button>
-
-                        <button
-                            class="odoo-tab-btn"
-                            onclick="switchCompanyTab('compSystemTab', this)"
-                        >
-                            إعدادات النظام والتابعية
-                        </button>
-
+                        <button class="odoo-tab-btn active" onclick="switchCompanyTab('compBasicTab', this)">البيانات الأساسية</button>
+                        <button class="odoo-tab-btn" onclick="switchCompanyTab('compContactTab', this)">التواصل والعنوان</button>
+                        <button class="odoo-tab-btn" onclick="switchCompanyTab('compSystemTab', this)">إعدادات النظام والتابعية</button>
                     </div>
-
 
                     <div id="compBasicTab" class="tab-content active">
-
                         <div class="form-grid">
-
+                            <div class="form-group"><label>اسم الشركة التجاري *</label><input type="text" id="compName"></div>
+                            <div class="form-group"><label>الاسم الرسمي / القانوني</label><input type="text" id="compLegalName"></div>
+                            <div class="form-group"><label>الرقم الضريبي *</label><input type="text" id="compTaxId"></div>
+                            <div class="form-group"><label>رقم السجل التجاري</label><input type="text" id="compCommercialRegister"></div>
                             <div class="form-group">
-                                <label>اسم الشركة التجاري *</label>
-                                <input type="text" id="compName" placeholder="مثال: شركة النور للحلول البرمجية">
-                            </div>
-
-                            <div class="form-group">
-                                <label>الاسم الرسمي / القانوني</label>
-                                <input type="text" id="compLegalName" placeholder="الاسم المسجل بالسجل التجاري">
-                            </div>
-
-                            <div class="form-group">
-                                <label>الرقم الضريبي (Tax ID) *</label>
-                                <input type="text" id="compTaxId" placeholder="مثال: 123-456-789">
-                            </div>
-
-                            <div class="form-group">
-                                <label>رقم السجل التجاري</label>
-                                <input type="text" id="compCommercialRegister" placeholder="مثال: 102030">
-                            </div>
-
-                            <div class="form-group">
-                                <label>مجال العمل (Industry)</label>
-
+                                <label>مجال العمل</label>
                                 <select id="compIndustry">
                                     <option value="تكنولوجيا وتطوير برمجيات">تكنولوجيا وتطوير برمجيات</option>
                                     <option value="مقاولات وإنشاءات">مقاولات وإنشاءات</option>
@@ -943,232 +313,100 @@
                                     <option value="عقارات">عقارات</option>
                                     <option value="أخرى">أخرى</option>
                                 </select>
-
                             </div>
-
                             <div class="form-group">
-                                <label>حجم الشركة (Company Size)</label>
-
+                                <label>حجم الشركة</label>
                                 <select id="compSize">
                                     <option value="1-10">1 - 10 موظفين</option>
                                     <option value="11-50">11 - 50 موظف</option>
                                     <option value="51-200">51 - 200 موظف</option>
                                     <option value="+200">أكثر من 200 موظف</option>
                                 </select>
-
                             </div>
-
-                            <div class="form-group">
-                                <label>شعار الشركة (Logo)</label>
-                                <input type="file" id="compLogoInput" accept="image/*">
-                            </div>
-
+                            <div class="form-group"><label>شعار الشركة</label><input type="file" id="compLogoInput" accept="image/*"></div>
                         </div>
-
                     </div>
-
 
                     <div id="compContactTab" class="tab-content">
-
                         <div class="form-grid">
-
-                            <div class="form-group">
-                                <label>البريد الإلكتروني الرسمي *</label>
-                                <input type="email" id="compEmail" placeholder="info@company.com">
-                            </div>
-
-                            <div class="form-group">
-                                <label>رقم الهاتف</label>
-                                <input type="text" id="compPhone" placeholder="مثال: 01000000000">
-                            </div>
-
-                            <div class="form-group">
-                                <label>الموقع الإلكتروني</label>
-                                <input type="url" id="compWebsite" placeholder="https://example.com">
-                            </div>
-
-                            <div class="form-group">
-                                <label>الدولة</label>
-                                <input type="text" id="compCountry" value="مصر">
-                            </div>
-
-                            <div class="form-group">
-                                <label>المحافظة / الولاية</label>
-                                <input type="text" id="compState" placeholder="القاهرة">
-                            </div>
-
-                            <div class="form-group">
-                                <label>المدينة</label>
-                                <input type="text" id="compCity" placeholder="مدينة نصر">
-                            </div>
-
-                            <div class="form-group">
-                                <label>الرمز البريدي</label>
-                                <input type="text" id="compPostalCode" placeholder="11511">
-                            </div>
-
-                            <div class="form-group" style="grid-column: span 2;">
-                                <label>العنوان التفصيلي (الشارع / المبنى)</label>
-                                <input type="text" id="compAddressStreet" placeholder="مثال: 15 شارع الطيران - الدور الرابع">
-                            </div>
-
+                            <div class="form-group"><label>البريد الإلكتروني الرسمي *</label><input type="email" id="compEmail"></div>
+                            <div class="form-group"><label>رقم الهاتف</label><input type="text" id="compPhone"></div>
+                            <div class="form-group"><label>الموقع الإلكتروني</label><input type="url" id="compWebsite"></div>
+                            <div class="form-group"><label>الدولة</label><input type="text" id="compCountry" value="مصر"></div>
+                            <div class="form-group"><label>المحافظة</label><input type="text" id="compState"></div>
+                            <div class="form-group"><label>المدينة</label><input type="text" id="compCity"></div>
+                            <div class="form-group"><label>الرمز البريدي</label><input type="text" id="compPostalCode"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>العنوان التفصيلي</label><input type="text" id="compAddressStreet"></div>
                         </div>
-
                     </div>
 
-
                     <div id="compSystemTab" class="tab-content">
-
                         <div class="form-grid">
-
                             <div class="form-group">
                                 <label>العملة الأساسية</label>
-
                                 <select id="compCurrency">
                                     <option value="EGP">جنيه مصري (EGP)</option>
                                     <option value="SAR">ريال سعودي (SAR)</option>
                                     <option value="USD">دولار أمريكي (USD)</option>
-                                    <option value="EUR">يورو (EUR)</option>
-                                    <option value="AED">درهم إماراتي (AED)</option>
                                 </select>
-
                             </div>
-
                             <div class="form-group">
                                 <label>حالة الشركة</label>
-
                                 <select id="compStatus">
-                                    <option value="active">نشطة (Active)</option>
-                                    <option value="pending">قيد الانتظار (Pending)</option>
-                                    <option value="suspended">معلقة (Suspended)</option>
+                                    <option value="active">نشطة</option>
+                                    <option value="pending">قيد الانتظار</option>
+                                    <option value="suspended">معلقة</option>
                                 </select>
-
                             </div>
-
                             <div class="form-group">
                                 <label>نوع الشركة</label>
-
                                 <select id="compIsParent" onchange="toggleParentCompanySelect(this)">
-                                    <option value="true">شركة أم (Parent Company)</option>
-                                    <option value="false">شركة فرعية (Subsidiary)</option>
+                                    <option value="true">شركة أم</option>
+                                    <option value="false">شركة فرعية</option>
                                 </select>
-
                             </div>
-
                             <div class="form-group" id="parentCompanyGroup" style="display: none;">
-
                                 <label>الشركة الأم التابعة لها</label>
-
-                                <select id="compParentId">
-                                    <option value="">-- اختر الشركة الأم --</option>
-                                </select>
-
+                                <select id="compParentId"><option value="">-- اختر الشركة الأم --</option></select>
                             </div>
-
                         </div>
-
                     </div>
-
 
                     <div style="margin-top: 25px;">
-                        <button class="btn btn-primary" onclick="addCompany()">
-                            <i class="fa-solid fa-plus"></i>
-                            إضافة الشركة
-                        </button>
+                        <button class="btn btn-primary" onclick="addCompany()"><i class="fa-solid fa-plus"></i> إضافة الشركة</button>
                     </div>
-
                 </div>
 
-
                 <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>دليل الشركات المسجلة</h2>
-                    </div>
-
+                    <div class="panel-header"><h2>دليل الشركات المسجلة</h2></div>
                     <table>
-
                         <thead>
                             <tr>
-                                <th>الشعار</th>
-                                <th>اسم الشركة</th>
-                                <th>الرقم الضريبي</th>
-                                <th>المجال</th>
-                                <th>التواصل</th>
-                                <th>العملة</th>
-                                <th>الحالة</th>
-                                <th>إجراءات</th>
+                                <th>الشعار</th><th>اسم الشركة</th><th>الرقم الضريبي</th><th>المجال</th><th>التواصل</th><th>العملة</th><th>الحالة</th><th>إجراءات</th>
                             </tr>
                         </thead>
-
                         <tbody id="companiesTableBody">
-                            <tr>
-                                <td colspan="8">
-                                    جاري تحميل البيانات...
-                                </td>
-                            </tr>
+                            <tr><td colspan="8">جاري تحميل البيانات...</td></tr>
                         </tbody>
-
                     </table>
-
                 </div>
-
             </div>
 
-
-            <!-- =========================
-                 CASES
-            ========================= -->
-
+            <!-- القضايا -->
             <div id="cases" class="page-section">
-
                 <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>إضافة قضية جديدة</h2>
-                    </div>
+                    <div class="panel-header"><h2>إضافة قضية جديدة</h2></div>
 
                     <div class="form-grid">
-
+                        <div class="form-group"><label>موضوع/اسم القضية *</label><input type="text" id="caseName"></div>
+                        <div class="form-group"><label>اسم الموكل</label><input type="text" id="clientName"></div>
+                        <div class="form-group"><label>رقم التوكيل</label><input type="text" id="powerOfAttorneyNo"></div>
+                        <div class="form-group"><label>مكان الإصدار</label><input type="text" id="poaIssuePlace"></div>
+                        <div class="form-group"><label>سنة الإصدار</label><input type="text" id="poaIssueYear"></div>
+                        <div class="form-group"><label>اسم الخصم</label><input type="text" id="opponentName"></div>
+                        <div class="form-group"><label>رقم تليفون الخصم</label><input type="text" id="opponentPhone"></div>
                         <div class="form-group">
-                            <label>موضوع/اسم القضية *</label>
-                            <input type="text" id="caseName" placeholder="مثال: دعوى صحة ونفاذ">
-                        </div>
-
-                        <div class="form-group">
-                            <label>اسم الموكل</label>
-                            <input type="text" id="clientName" placeholder="اسم الموكل">
-                        </div>
-
-                        <div class="form-group">
-                            <label>رقم التوكيل</label>
-                            <input type="text" id="powerOfAttorneyNo" placeholder="مثال: 1234 أ">
-                        </div>
-
-                        <div class="form-group">
-                            <label>مكان الإصدار</label>
-                            <input type="text" id="poaIssuePlace" placeholder="مثال: توثيق الأهرام">
-                        </div>
-
-                        <div class="form-group">
-                            <label>سنة الإصدار</label>
-                            <input type="text" id="poaIssueYear" placeholder="مثال: 2024">
-                        </div>
-
-                        <div class="form-group">
-                            <label>اسم الخصم</label>
-                            <input type="text" id="opponentName" placeholder="اسم الخصم">
-                        </div>
-
-                        <div class="form-group">
-                            <label>رقم تليفون الخصم</label>
-                            <input type="text" id="opponentPhone" placeholder="رقم الهاتف">
-                        </div>
-
-                        <div class="form-group">
-
                             <label>نوع القضية</label>
-
                             <select id="caseType" onchange="handleCaseTypeChange(this)">
                                 <option value="مدني">مدني</option>
                                 <option value="جنائي">جنائي</option>
@@ -1178,589 +416,263 @@
                                 <option value="مجلس دولة">مجلس دولة</option>
                                 <option value="__add_new__">+ إضافة نوع جديد...</option>
                             </select>
-
                         </div>
-
+                        <div class="form-group"><label>رقم القضية</label><input type="text" id="caseNumber"></div>
+                        <div class="form-group"><label>السنة</label><input type="text" id="caseYear" value="2026"></div>
+                        <div class="form-group"><label>المحكمة</label><input type="text" id="courtName"></div>
+                        <div class="form-group"><label>الدائرة</label><input type="text" id="courtBranch"></div>
+                        <div class="form-group"><label>المحامي المسؤول</label><input type="text" id="assignedLawyer"></div>
                         <div class="form-group">
-                            <label>رقم القضية</label>
-                            <input type="text" id="caseNumber" placeholder="مثال: 1234">
-                        </div>
-
-                        <div class="form-group">
-                            <label>السنة</label>
-                            <input type="text" id="caseYear" value="2026">
-                        </div>
-
-                        <div class="form-group">
-                            <label>المحكمة</label>
-                            <input type="text" id="courtName" placeholder="مثال: محكمة جنوب القاهرة">
-                        </div>
-
-                        <div class="form-group">
-                            <label>الدائرة</label>
-                            <input type="text" id="courtBranch" placeholder="مثال: دائرة 5 مدني">
-                        </div>
-
-                        <div class="form-group">
-                            <label>المحامي المسؤول</label>
-                            <input type="text" id="assignedLawyer" placeholder="اسم المحامي المسؤول">
-                        </div>
-
-                        <div class="form-group">
-
                             <label>الحالة</label>
-
                             <select id="caseStatus">
                                 <option value="جديدة">جديدة</option>
                                 <option value="جارية">جارية</option>
                                 <option value="مؤجلة">مؤجلة</option>
                                 <option value="تمت">تمت</option>
                             </select>
-
                         </div>
-
                     </div>
-
 
                     <div class="odoo-tabs">
-
-                        <button
-                            class="odoo-tab-btn active"
-                            onclick="switchOdooTab('sessionsTab', this)"
-                        >
-                            الجلسات والرول
-                        </button>
-
-                        <button
-                            class="odoo-tab-btn"
-                            onclick="switchOdooTab('detailsTab', this)"
-                        >
-                            تفاصيل القضية
-                        </button>
-
+                        <button class="odoo-tab-btn active" onclick="switchOdooTab('sessionsTab', this)">الجلسات والرول</button>
+                        <button class="odoo-tab-btn" onclick="switchOdooTab('detailsTab', this)">تفاصيل القضية</button>
                     </div>
-
 
                     <div id="sessionsTab" class="tab-content active">
-
                         <table style="margin-bottom: 15px;">
-
                             <thead>
                                 <tr>
-                                    <th>تاريخ ووقت الجلسة</th>
-                                    <th>موضوع الجلسة</th>
-                                    <th>المحامي الحاضر</th>
-                                    <th>قرار الجلسة / ما تم فيها</th>
-                                    <th>إجراء</th>
+                                    <th>تاريخ ووقت الجلسة</th><th>موضوع الجلسة</th><th>المحامي الحاضر</th><th>قرار الجلسة / ما تم فيها</th><th>إجراء</th>
                                 </tr>
                             </thead>
-
                             <tbody id="sessionsTableBody"></tbody>
-
                         </table>
-
-                        <button
-                            class="btn btn-sm btn-primary"
-                            onclick="addSessionRow()"
-                        >
-                            <i class="fa-solid fa-plus"></i>
-                            إضافة الأسطر
-                        </button>
-
+                        <button class="btn btn-sm btn-primary" onclick="addSessionRow('sessionsTableBody')"><i class="fa-solid fa-plus"></i> إضافة أسطر جديدة</button>
                     </div>
 
-
                     <div id="detailsTab" class="tab-content">
-
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label>ملاحظات وتفاصيل القضية</label>
-
-                            <textarea
-                                id="caseDetailsNotes"
-                                rows="4"
-                                placeholder="اكتب تفاصيل وملاحظات القضية هنا..."
-                            ></textarea>
+                            <textarea id="caseDetailsNotes" rows="4" placeholder="اكتب تفاصيل وملاحظات القضية هنا..."></textarea>
                         </div>
-
                         <div class="form-group">
                             <label>إرفاق صور أو ملفات القضية</label>
                             <input type="file" id="caseAttachmentInput" accept="image/*,.pdf">
                         </div>
-
                     </div>
-
 
                     <div style="margin-top: 25px;">
-
-                        <button
-                            class="btn btn-primary"
-                            onclick="addCase()"
-                        >
-                            <i class="fa-solid fa-plus"></i>
-                            إضافة القضية
-                        </button>
-
+                        <button class="btn btn-primary" onclick="addCase()"><i class="fa-solid fa-plus"></i> إضافة القضية</button>
                     </div>
-
                 </div>
 
-
                 <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>جدول القضايا الشامل</h2>
-                    </div>
-
+                    <div class="panel-header"><h2>جدول القضايا الشامل</h2></div>
                     <table style="width:100%;">
-
                         <thead>
                             <tr>
-                                <th>اسم القضية</th>
-                                <th>الموكل</th>
-                                <th>الخصم</th>
-                                <th>النوع</th>
-                                <th>رقم القضية/السنة</th>
-                                <th>المحكمة / الدائرة</th>
-                                <th>المحامي المسؤول</th>
-                                <th>المرفق</th>
-                                <th>الحالة</th>
-                                <th>إجراءات</th>
+                                <th>اسم القضية</th><th>الموكل</th><th>الخصم</th><th>النوع</th><th>رقم القضية/السنة</th><th>المحكمة / الدائرة</th><th>المحامي المسؤول</th><th>المرفق</th><th>الحالة</th><th>إجراءات</th>
                             </tr>
                         </thead>
-
                         <tbody id="casesTableBody">
-                            <tr>
-                                <td colspan="10">
-                                    جاري تحميل البيانات...
-                                </td>
-                            </tr>
+                            <tr><td colspan="10">جاري تحميل البيانات...</td></tr>
                         </tbody>
-
                     </table>
-
                 </div>
-
             </div>
 
-
-            <!-- =========================
-                 TASKS
-            ========================= -->
-
+            <!-- المهام -->
             <div id="tasks" class="page-section">
-
                 <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>إضافة مهمة جديدة</h2>
-                    </div>
-
+                    <div class="panel-header"><h2>إضافة مهمة جديدة</h2></div>
                     <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
-
-                        <input
-                            type="text"
-                            id="taskTitle"
-                            placeholder="أدخل تفاصيل المهمة..."
-                            style="flex:1; min-width:250px; padding:10px; border:1px solid #cbd5e1; border-radius:6px;"
-                        >
-
+                        <input type="text" id="taskTitle" placeholder="أدخل تفاصيل المهمة..." style="flex:1; min-width:250px; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
                         <div style="display:flex; align-items:center; gap:6px;">
-
-                            <input
-                                type="date"
-                                id="taskDueDate"
-                                class="form-control"
-                                style="padding:10px; border:1px solid #cbd5e1; border-radius:6px;"
-                            >
-
-                            <span style="color:#64748b; white-space:nowrap;">
-                                يوم
-                            </span>
-
+                            <input type="date" id="taskDueDate" style="padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
                         </div>
-
-                        <button
-                            class="btn btn-primary"
-                            onclick="addTask()"
-                        >
-                            إضافة المهمة
-                        </button>
-
+                        <button class="btn btn-primary" onclick="addTask()">إضافة المهمة</button>
                     </div>
-
-                    <ul
-                        id="tasksList"
-                        style="list-style:none;"
-                    ></ul>
-
+                    <ul id="tasksList" style="list-style:none;"></ul>
                 </div>
-
             </div>
 
-
-            <!-- =========================
-                 CLIENTS
-            ========================= -->
-
+            <!-- إدارة الموكلين -->
             <div id="clients" class="page-section">
-
                 <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>إضافة موكل جديد</h2>
-                    </div>
-
+                    <div class="panel-header"><h2>إضافة موكل جديد مع المصروفات</h2></div>
                     <div class="form-grid">
-
-                        <div class="form-group">
-                            <label>اسم الموكل *</label>
-                            <input
-                                type="text"
-                                id="clientFormName"
-                                placeholder="الاسم بالكامل"
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label>رقم الهاتف *</label>
-                            <input
-                                type="text"
-                                id="clientFormPhone"
-                                placeholder="رقم الهاتف"
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label>صورة البطاقة (اختياري)</label>
-                            <input
-                                type="file"
-                                id="clientIdCardInput"
-                                accept="image/*"
-                            >
-                        </div>
-
+                        <div class="form-group"><label>اسم الموكل *</label><input type="text" id="clientFormName"></div>
+                        <div class="form-group"><label>رقم الهاتف *</label><input type="text" id="clientFormPhone"></div>
+                        <div class="form-group"><label>صورة البطاقة الشخصية</label><input type="file" id="clientIdCardInput" accept="image/*"></div>
                     </div>
 
-                    <button
-                        class="btn btn-primary"
-                        onclick="addClient()"
-                    >
-                        <i class="fa-solid fa-plus"></i>
-                        إضافة موكل
-                    </button>
-
-                </div>
-
-
-                <div class="panel">
-
-                    <div class="panel-header">
-                        <h2>قائمة الموكلين</h2>
-                    </div>
-
-                    <table>
-
+                    <!-- أسطر المصروفات أصلية للموكل -->
+                    <h3 style="font-size:1rem; margin: 15px 0 10px; color:#0f172a;">بيانات الصرف والمصروفات الخاصة بالموكل</h3>
+                    <table style="margin-bottom: 15px;">
                         <thead>
                             <tr>
-                                <th>الاسم</th>
-                                <th>رقم الهاتف</th>
-                                <th>صورة البطاقة</th>
-                                <th>إجراءات</th>
+                                <th>مبلغ الصرف</th><th>تاريخ الصرف</th><th>سبب الصرف</th><th>المحامي المسدد</th><th>إجراء</th>
                             </tr>
                         </thead>
-
-                        <tbody id="clientsTableBody">
-                            <tr>
-                                <td colspan="4">
-                                    جاري تحميل البيانات...
-                                </td>
-                            </tr>
-                        </tbody>
-
+                        <tbody id="clientExpensesTableBody"></tbody>
                     </table>
+                    <button class="btn btn-sm btn-primary" onclick="addClientExpenseRow('clientExpensesTableBody')"><i class="fa-solid fa-plus"></i> إضافة سطر صرف جديد</button>
 
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="addClient()"><i class="fa-solid fa-plus"></i> حفظ الموكل والمصروفات</button>
+                    </div>
                 </div>
 
+                <div class="panel">
+                    <div class="panel-header"><h2>قائمة الموكلين</h2></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم الموكل</th><th>رقم الهاتف</th><th>البطاقة</th><th>المصروفات</th><th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTableBody">
+                            <tr><td colspan="5">جاري التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
-
     </div>
 
-
-    <!-- =========================
-         EDIT CASE MODAL
-    ========================= -->
-
-    <div id="editCaseModal" class="modal">
-
+    <!-- نافذة عرض تفاصيل القضية والجلسات -->
+    <div id="viewCaseModal" class="modal">
         <div class="modal-content">
+            <div class="panel-header">
+                <h2><i class="fa-solid fa-folder-open"></i> تفاصيل القضية بالجلسات والرول</h2>
+                <button class="btn btn-sm btn-danger" onclick="closeViewCaseModal()">X</button>
+            </div>
+            <input type="hidden" id="viewCaseId">
 
-            <h3 style="margin-bottom:15px;">
-                تعديل بيانات القضية
-            </h3>
-
-            <input type="hidden" id="editCaseId">
-
-            <div class="form-grid">
-
-                <div class="form-group">
-                    <label>اسم القضية</label>
-                    <input type="text" id="editCaseName">
-                </div>
-
-                <div class="form-group">
-                    <label>اسم الموكل</label>
-                    <input type="text" id="editClientName">
-                </div>
-
-                <div class="form-group">
-                    <label>رقم التوكيل</label>
-                    <input type="text" id="editPowerOfAttorneyNo">
-                </div>
-
-                <div class="form-group">
-                    <label>مكان الإصدار</label>
-                    <input type="text" id="editPoaIssuePlace">
-                </div>
-
-                <div class="form-group">
-                    <label>سنة الإصدار</label>
-                    <input type="text" id="editPoaIssueYear">
-                </div>
-
-                <div class="form-group">
-                    <label>اسم الخصم</label>
-                    <input type="text" id="editOpponentName">
-                </div>
-
-                <div class="form-group">
-                    <label>رقم تليفون الخصم</label>
-                    <input type="text" id="editOpponentPhone">
-                </div>
-
-                <div class="form-group">
-
-                    <label>نوع القضية</label>
-
-                    <select id="editCaseType">
-                        <option value="مدني">مدني</option>
-                        <option value="جنائي">جنائي</option>
-                        <option value="أسرة">أسرة</option>
-                        <option value="تجاري">تجاري</option>
-                        <option value="عمالي">عمالي</option>
-                        <option value="مجلس دولة">مجلس دولة</option>
-                    </select>
-
-                </div>
-
-                <div class="form-group">
-                    <label>رقم القضية</label>
-                    <input type="text" id="editCaseNumber">
-                </div>
-
-                <div class="form-group">
-                    <label>السنة</label>
-                    <input type="text" id="editCaseYear">
-                </div>
-
-                <div class="form-group">
-                    <label>المحكمة</label>
-                    <input type="text" id="editCourtName">
-                </div>
-
-                <div class="form-group">
-                    <label>الدائرة</label>
-                    <input type="text" id="editCourtBranch">
-                </div>
-
-                <div class="form-group">
-                    <label>المحامي المسؤول</label>
-                    <input type="text" id="editAssignedLawyer">
-                </div>
-
-                <div class="form-group">
-                    <label>تعديل مرفق/صورة القضية</label>
-                    <input
-                        type="file"
-                        id="editCaseAttachmentInput"
-                        accept="image/*,.pdf"
-                    >
-                </div>
-
-                <div class="form-group">
-
-                    <label>الحالة</label>
-
-                    <select id="editCaseStatus">
-                        <option value="جديدة">جديدة</option>
-                        <option value="جارية">جارية</option>
-                        <option value="مؤجلة">مؤجلة</option>
-                        <option value="تمت">تمت</option>
-                    </select>
-
-                </div>
-
+            <div class="details-grid">
+                <div class="details-item"><strong>اسم/موضوع القضية:</strong> <span id="viewCaseTitle">-</span></div>
+                <div class="details-item"><strong>اسم الموكل:</strong> <span id="viewClientName">-</span></div>
+                <div class="details-item"><strong>اسم الخصم:</strong> <span id="viewOpponentName">-</span></div>
+                <div class="details-item"><strong>هاتف الخصم:</strong> <span id="viewOpponentPhone">-</span></div>
+                <div class="details-item"><strong>بيانات التوكيل:</strong> <span id="viewPowerOfAttorney">-</span></div>
+                <div class="details-item"><strong>النوع والمسلسل/السنة:</strong> <span id="viewCaseTypeNo">-</span></div>
+                <div class="details-item"><strong>المحكمة والدائرة:</strong> <span id="viewCourt">-</span></div>
+                <div class="details-item"><strong>المحامي المسؤول:</strong> <span id="viewLawyer">-</span></div>
+                <div class="details-item"><strong>الحالة:</strong> <span id="viewStatus">-</span></div>
+                <div class="details-item"><strong>المرفق:</strong> <span id="viewAttachment">-</span></div>
             </div>
 
-            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
-
-                <button
-                    class="btn btn-primary"
-                    onclick="saveCaseUpdate()"
-                >
-                    حفظ التعديلات
-                </button>
-
-                <button
-                    class="btn"
-                    style="background:#cbd5e1;"
-                    onclick="closeEditModal()"
-                >
-                    إلغاء
-                </button>
-
+            <div style="margin-bottom: 20px;">
+                <strong style="color:#64748b; font-size:0.85rem;">ملاحظات القضية:</strong>
+                <p id="viewNotes" style="background:#f1f5f9; padding:10px; border-radius:6px; margin-top:5px; font-size:0.9rem;"></p>
             </div>
 
+            <h3 style="font-size: 1rem; color:#0f172a; margin-bottom:10px;"><i class="fa-solid fa-calendar-days"></i> سجل الجلسات والرول</h3>
+            <table style="margin-bottom: 15px;">
+                <thead>
+                    <tr>
+                        <th>تاريخ ووقت الجلسة</th><th>موضوع الجلسة</th><th>المحامي الحاضر</th><th>قرار الجلسة / ما تم فيها</th><th>إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="viewSessionsTableBody"></tbody>
+            </table>
+            <button class="btn btn-sm btn-primary" onclick="addSessionRow('viewSessionsTableBody')"><i class="fa-solid fa-plus"></i> إضافة سطر جلسة جديد</button>
+
+            <div style="margin-top: 25px; text-align: left;">
+                <button class="btn btn-success" onclick="saveCaseSessionsUpdate()"><i class="fa-solid fa-floppy-disk"></i> حفظ التحديثات والجلسات</button>
+                <button class="btn btn-secondary" onclick="closeViewCaseModal()">إلغاء</button>
+            </div>
         </div>
-
     </div>
 
+    <!-- نافذة تعديل وإدارة مصروفات الموكل -->
+    <div id="clientExpensesModal" class="modal">
+        <div class="modal-content">
+            <div class="panel-header">
+                <h2><i class="fa-solid fa-receipt"></i> إدارة مصروفات الموكل: <span id="modalClientName"></span></h2>
+                <button class="btn btn-sm btn-danger" onclick="closeClientExpensesModal()">X</button>
+            </div>
+            <input type="hidden" id="editExpensesClientId">
 
-    <!-- =========================
-         EDIT COMPANY MODAL
-    ========================= -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>مبلغ الصرف</th><th>تاريخ الصرف</th><th>سبب الصرف</th><th>المحامي المسدد</th><th>إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="modalClientExpensesTableBody"></tbody>
+            </table>
+            <br>
+            <button class="btn btn-sm btn-primary" onclick="addClientExpenseRow('modalClientExpensesTableBody')"><i class="fa-solid fa-plus"></i> إضافة سطر صرف آخر</button>
 
+            <div style="margin-top: 25px; text-align: left;">
+                <button class="btn btn-success" onclick="saveClientExpensesUpdate()"><i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات والمصروفات</button>
+                <button class="btn btn-secondary" onclick="closeClientExpensesModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل الشركة -->
     <div id="editCompanyModal" class="modal">
-
         <div class="modal-content">
-
-            <h3 style="margin-bottom:15px;">
-                تعديل بيانات الشركة
-            </h3>
-
+            <div class="panel-header"><h2>تعديل بيانات الشركة</h2><button class="btn btn-sm btn-danger" onclick="closeEditCompanyModal()">X</button></div>
             <input type="hidden" id="editCompId">
-
             <div class="form-grid">
-
+                <div class="form-group"><label>اسم الشركة التجاري</label><input type="text" id="editCompName"></div>
+                <div class="form-group"><label>الاسم الرسمي / القانوني</label><input type="text" id="editCompLegalName"></div>
+                <div class="form-group"><label>الرقم الضريبي</label><input type="text" id="editCompTaxId"></div>
+                <div class="form-group"><label>رقم السجل التجاري</label><input type="text" id="editCompCommercialRegister"></div>
+                <div class="form-group"><label>مجال العمل</label><input type="text" id="editCompIndustry"></div>
+                <div class="form-group"><label>حجم الشركة</label><input type="text" id="editCompSize"></div>
+                <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="editCompEmail"></div>
+                <div class="form-group"><label>رقم الهاتف</label><input type="text" id="editCompPhone"></div>
+                <div class="form-group"><label>الموقع الإلكتروني</label><input type="text" id="editCompWebsite"></div>
+                <div class="form-group"><label>العملة</label><input type="text" id="editCompCurrency"></div>
                 <div class="form-group">
-                    <label>اسم الشركة التجاري</label>
-                    <input type="text" id="editCompName">
-                </div>
-
-                <div class="form-group">
-                    <label>الاسم الرسمى</label>
-                    <input type="text" id="editCompLegalName">
-                </div>
-
-                <div class="form-group">
-                    <label>الرقم الضريبي</label>
-                    <input type="text" id="editCompTaxId">
-                </div>
-
-                <div class="form-group">
-                    <label>السجل التجاري</label>
-                    <input type="text" id="editCompCommercialRegister">
-                </div>
-
-                <div class="form-group">
-
-                    <label>المجال</label>
-
-                    <select id="editCompIndustry">
-                        <option value="تكنولوجيا وتطوير برمجيات">تكنولوجيا وتطوير برمجيات</option>
-                        <option value="مقاولات وإنشاءات">مقاولات وإنشاءات</option>
-                        <option value="استيراد وتصدير">استيراد وتصدير</option>
-                        <option value="تجارة وتجزئة">تجارة وتجزئة</option>
-                        <option value="خدمات قانونية ومالية">خدمات قانونية ومالية</option>
-                        <option value="عقارات">عقارات</option>
-                        <option value="أخرى">أخرى</option>
-                    </select>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>الحجم</label>
-
-                    <select id="editCompSize">
-                        <option value="1-10">1 - 10 موظفين</option>
-                        <option value="11-50">11 - 50 موظف</option>
-                        <option value="51-200">51 - 200 موظف</option>
-                        <option value="+200">أكثر من 200 موظف</option>
-                    </select>
-
-                </div>
-
-                <div class="form-group">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" id="editCompEmail">
-                </div>
-
-                <div class="form-group">
-                    <label>الهاتف</label>
-                    <input type="text" id="editCompPhone">
-                </div>
-
-                <div class="form-group">
-                    <label>الموقع الإلكتروني</label>
-                    <input type="url" id="editCompWebsite">
-                </div>
-
-                <div class="form-group">
-
-                    <label>العملة</label>
-
-                    <select id="editCompCurrency">
-                        <option value="EGP">EGP</option>
-                        <option value="SAR">SAR</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="AED">AED</option>
-                    </select>
-
-                </div>
-
-                <div class="form-group">
-
                     <label>الحالة</label>
-
-                    <select id="editCompStatus">
-                        <option value="active">نشطة (Active)</option>
-                        <option value="pending">قيد الانتظار (Pending)</option>
-                        <option value="suspended">معلقة (Suspended)</option>
-                    </select>
-
+                    <select id="editCompStatus"><option value="active">نشطة</option><option value="pending">قيد الانتظار</option><option value="suspended">معلقة</option></select>
                 </div>
-
             </div>
-
-            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
-
-                <button
-                    class="btn btn-primary"
-                    onclick="saveCompanyUpdate()"
-                >
-                    حفظ التعديلات
-                </button>
-
-                <button
-                    class="btn"
-                    style="background:#cbd5e1;"
-                    onclick="closeEditCompanyModal()"
-                >
-                    إلغاء
-                </button>
-
+            <div style="margin-top:20px; text-align:left;">
+                <button class="btn btn-success" onclick="saveCompanyUpdate()">حفظ التعديلات</button>
+                <button class="btn btn-secondary" onclick="closeEditCompanyModal()">إلغاء</button>
             </div>
-
         </div>
-
     </div>
 
+    <!-- نافذة تعديل القضية -->
+    <div id="editCaseModal" class="modal">
+        <div class="modal-content">
+            <div class="panel-header"><h2>تعديل بيانات القضية</h2><button class="btn btn-sm btn-danger" onclick="closeEditModal()">X</button></div>
+            <input type="hidden" id="editCaseId">
+            <div class="form-grid">
+                <div class="form-group"><label>موضوع القضية</label><input type="text" id="editCaseName"></div>
+                <div class="form-group"><label>اسم الموكل</label><input type="text" id="editClientName"></div>
+                <div class="form-group"><label>رقم التوكيل</label><input type="text" id="editPowerOfAttorneyNo"></div>
+                <div class="form-group"><label>مكان الإصدار</label><input type="text" id="editPoaIssuePlace"></div>
+                <div class="form-group"><label>سنة الإصدار</label><input type="text" id="editPoaIssueYear"></div>
+                <div class="form-group"><label>اسم الخصم</label><input type="text" id="editOpponentName"></div>
+                <div class="form-group"><label>هاتف الخصم</label><input type="text" id="editOpponentPhone"></div>
+                <div class="form-group"><label>نوع القضية</label><input type="text" id="editCaseType"></div>
+                <div class="form-group"><label>رقم القضية</label><input type="text" id="editCaseNumber"></div>
+                <div class="form-group"><label>السنة</label><input type="text" id="editCaseYear"></div>
+                <div class="form-group"><label>المحكمة</label><input type="text" id="editCourtName"></div>
+                <div class="form-group"><label>الدائرة</label><input type="text" id="editCourtBranch"></div>
+                <div class="form-group"><label>المحامي المسؤول</label><input type="text" id="editAssignedLawyer"></div>
+                <div class="form-group">
+                    <label>الحالة</label>
+                    <select id="editCaseStatus"><option value="جديدة">جديدة</option><option value="جارية">جارية</option><option value="مؤجلة">مؤجلة</option><option value="تمت">تمت</option></select>
+                </div>
+                <div class="form-group"><label>تحديث المرفق</label><input type="file" id="editCaseAttachmentInput"></div>
+            </div>
+            <div style="margin-top:20px; text-align:left;">
+                <button class="btn btn-success" onclick="saveCaseUpdate()">حفظ التغيرات</button>
+                <button class="btn btn-secondary" onclick="closeEditModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
-
 </body>
 </html>
