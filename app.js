@@ -16,6 +16,20 @@ function isAdmin() {
     return currentProfile && currentProfile.role === 'admin';
 }
 
+function canManageClients() {
+    return Boolean(currentUser && currentProfile?.status === 'approved' &&
+        ['admin', 'employee'].includes(currentProfile.role));
+}
+
+function requireClientManagement() {
+    if (!requireLogin()) return false;
+    if (!canManageClients()) {
+        alert('ليس لديك صلاحية لتنفيذ هذا الإجراء.');
+        return false;
+    }
+    return true;
+}
+
 function requireLogin() {
     if (!currentUser) {
         alert('برجاء تسجيل الدخول أولاً.');
@@ -37,6 +51,40 @@ function requireAdmin() {
     }
 
     return true;
+}
+
+const popupFocus = new WeakMap();
+
+function preparePopup(overlay, close) {
+    const panel = overlay.querySelector('.details-modal, .modal-content');
+    popupFocus.set(overlay, document.activeElement);
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('aria-label', panel.querySelector('h2')?.textContent.trim() || 'التفاصيل');
+    panel.tabIndex = -1;
+    panel.scrollTop = 0;
+    overlay.onkeydown = event => {
+        if (event.key === 'Escape') { event.preventDefault(); close(); }
+        if (event.key !== 'Tab') return;
+        const focusable = Array.from(panel.querySelectorAll('button, a[href], input, select, textarea, [tabindex="0"]'))
+            .filter(el => !el.disabled && el.getClientRects().length);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!first) { event.preventDefault(); panel.focus(); return; }
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+            event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === panel)) {
+            event.preventDefault(); first.focus();
+        }
+    };
+    overlay.onclick = event => { if (event.target === overlay) close(); };
+    panel.focus({ preventScroll: true });
+}
+
+function restorePopupFocus(overlay) {
+    const trigger = popupFocus.get(overlay);
+    if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    popupFocus.delete(overlay);
 }
 
 function createLoginScreen() {
@@ -164,96 +212,6 @@ function createLoginScreen() {
             margin-right: 15px;
         }
 
-        .details-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            z-index: 99990;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .details-modal {
-            background: #fff;
-            width: min(1100px, 100%);
-            max-height: 90vh;
-            overflow-y: auto;
-            border-radius: 14px;
-            padding: 24px;
-            direction: rtl;
-            box-shadow: 0 20px 60px rgba(0,0,0,.25);
-        }
-
-        .details-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .details-item {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px;
-        }
-
-        .details-item label {
-            display: block;
-            color: #64748b;
-            font-size: 12px;
-            margin-bottom: 5px;
-        }
-
-        .details-item strong {
-            color: #0f172a;
-            word-break: break-word;
-        }
-
-        .details-notes {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            white-space: pre-wrap;
-        }
-
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .details-table th,
-        .details-table td {
-            border: 1px solid #e2e8f0;
-            padding: 9px;
-            text-align: right;
-            vertical-align: top;
-        }
-
-        .details-table th {
-            background: #f8fafc;
-        }
-
-        .details-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
     `;
 
     document.head.appendChild(style);
@@ -3251,6 +3209,7 @@ async function openEditModal(
         editModal.classList.add(
             'active'
         );
+        preparePopup(editModal, closeEditModal);
     }
 }
 
@@ -3418,6 +3377,7 @@ function closeEditModal() {
         editModal.classList.remove(
             'active'
         );
+        restorePopupFocus(editModal);
     }
 }
 
@@ -4125,6 +4085,7 @@ async function openCaseDetails(
     document.body.appendChild(
         overlay
     );
+    preparePopup(overlay, closeDynamicCaseDetails);
 }
 
 function closeDynamicCaseDetails() {
@@ -4136,6 +4097,7 @@ function closeDynamicCaseDetails() {
 
     if (modal) {
         modal.remove();
+        restorePopupFocus(modal);
     }
 }
 
@@ -4206,7 +4168,7 @@ function renderClientsTable(
             .map(c => {
 
                 const adminActions =
-                    isAdmin()
+                    canManageClients()
                         ? `
                             <button
                                 class="btn btn-sm btn-warning"
@@ -4416,7 +4378,7 @@ async function removeClientExpenseRow(
         return;
     }
 
-    if (!requireAdmin()) return;
+    if (!requireClientManagement()) return;
 
     if (
         !confirm(
@@ -4904,7 +4866,7 @@ async function openClientDetails(
             >
 
                 ${
-                    isAdmin()
+                    canManageClients()
                         ? `
                             <button
                                 class="btn btn-warning"
@@ -4941,6 +4903,7 @@ async function openClientDetails(
     document.body.appendChild(
         overlay
     );
+    preparePopup(overlay, closeDynamicClientDetails);
 }
 
 function closeDynamicClientDetails() {
@@ -4952,6 +4915,7 @@ function closeDynamicClientDetails() {
 
     if (modal) {
         modal.remove();
+        restorePopupFocus(modal);
     }
 }
 
@@ -4959,7 +4923,7 @@ async function openEditClientModal(
     clientId
 ) {
 
-    if (!requireAdmin()) return;
+    if (!requireClientManagement()) return;
 
     const client =
         allClientsCache.find(
@@ -5163,6 +5127,7 @@ async function openEditClientModal(
     document.body.appendChild(
         overlay
     );
+    preparePopup(overlay, closeClientEditDynamicModal);
 
     const body =
         document.getElementById(
@@ -5190,12 +5155,13 @@ function closeClientEditDynamicModal() {
 
     if (modal) {
         modal.remove();
+        restorePopupFocus(modal);
     }
 }
 
 async function saveClientUpdate() {
 
-    if (!requireAdmin()) return;
+    if (!requireClientManagement()) return;
 
     const clientId =
         document.getElementById(
@@ -5393,7 +5359,7 @@ async function deleteClient(
     id
 ) {
 
-    if (!requireAdmin()) return;
+    if (!requireClientManagement()) return;
 
     if (
         !confirm(
