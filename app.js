@@ -12,6 +12,51 @@ let currentProfile = null;
 let realtimeStarted = false;
 let profileLoadError = '';
 
+// Session inputs and labels always use the office timezone, not the device timezone.
+const sessionDateParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+});
+
+function sessionDateForInput(value) {
+    if (!value) return '';
+    // Legacy timestamps without an offset represent office wall time.
+    if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(value)) return String(value).replace(' ', 'T').slice(0, 16);
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return '';
+    const p = Object.fromEntries(sessionDateParts.formatToParts(date).map(part => [part.type, part.value]));
+    return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+function sessionDateForStorage(value, original) {
+    if (original && /(Z|[+-]\d{2}:?\d{2})$/i.test(original) && sessionDateForInput(original) === value) return original;
+    if (!value) return null;
+    const wall = String(value).slice(0, 16);
+    const target = Date.parse(wall + ':00Z');
+    if (!Number.isFinite(target)) throw new Error('موعد الجلسة غير صالح.');
+    // Derive possible offsets on both sides of a DST transition.
+    const candidates = new Set();
+    for (const delta of [-86400000, 0, 86400000]) {
+        const probe = target + delta;
+        const local = sessionDateForInput(new Date(probe).toISOString());
+        const offset = Date.parse(local + ':00Z') - probe;
+        const candidate = new Date(target - offset).toISOString();
+        if (sessionDateForInput(candidate) === wall) candidates.add(candidate);
+    }
+    if (!candidates.size) throw new Error('هذا الوقت غير موجود بتوقيت القاهرة بسبب تغيير الساعة. اختر موعدًا آخر.');
+    // In the repeated autumn hour, consistently use its first occurrence.
+    return [...candidates].sort()[0];
+}
+
+function formatSessionDate(value) {
+    if (!value) return '-';
+    const timestamp = /(Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : sessionDateForStorage(value);
+    return new Date(timestamp).toLocaleString('ar-EG', {
+        timeZone: 'Africa/Cairo', year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: '2-digit'
+    });
+}
+
 function isAdmin() {
     return currentProfile && currentProfile.role === 'admin';
 }
@@ -1152,6 +1197,7 @@ function switchPage(
     element
 ) {
     if (pageId === 'employees' && !requireAdmin()) return;
+    if (pageId === 'activities' && (!currentUser || !isAdmin() || currentProfile?.status !== 'approved')) return;
 
     document
         .querySelectorAll(
@@ -2032,6 +2078,7 @@ function addSessionRow(data = {}) {
         tr.dataset.sessionId =
             data.id;
     }
+    tr.dataset.sessionDate = data.session_date || '';
 
     tr.innerHTML = `
 
@@ -2040,10 +2087,7 @@ function addSessionRow(data = {}) {
                 type="datetime-local"
                 class="session-date"
                 value="${escapeHtml(
-                    data.session_date
-                        ? String(data.session_date)
-                            .slice(0, 16)
-                        : ''
+                    sessionDateForInput(data.session_date)
                 )}"
                 style="width:100%;"
             >
@@ -2879,9 +2923,7 @@ async function addCase() {
                                         case_id:
                                             caseId,
 
-                                        session_date:
-                                            session_date ||
-                                            null,
+                                        session_date: sessionDateForStorage(session_date, row.dataset.sessionDate),
 
                                         session_subject:
                                             session_subject ||
@@ -3243,6 +3285,7 @@ function addEditSessionRow(
         tr.dataset.sessionId =
             data.id;
     }
+    tr.dataset.sessionDate = data.session_date || '';
 
     tr.innerHTML = `
 
@@ -3252,10 +3295,7 @@ function addEditSessionRow(
                 type="datetime-local"
                 class="session-date"
                 value="${escapeHtml(
-                    data.session_date
-                        ? String(data.session_date)
-                            .slice(0, 16)
-                        : ''
+                    sessionDateForInput(data.session_date)
                 )}"
                 style="width:100%;"
             >
@@ -3625,9 +3665,7 @@ async function saveCaseUpdate() {
                 case_id:
                     Number(id),
 
-                session_date:
-                    session_date ||
-                    null,
+                session_date: sessionDateForStorage(session_date, row.dataset.sessionDate),
 
                 session_subject,
 
@@ -3808,11 +3846,7 @@ async function openCaseDetails(
                                     <td>
                                         ${
                                             session.session_date
-                                                ? new Date(
-                                                    session.session_date
-                                                  ).toLocaleString(
-                                                    'ar-EG'
-                                                  )
+                                                ? formatSessionDate(session.session_date)
                                                 : '-'
                                         }
                                     </td>
@@ -6101,6 +6135,7 @@ function startRealtime() {
 let employeesRequestVersion = 0;
 
 function updateEmployeesVisibility() {
+    if (window.updateActivityVisibility) window.updateActivityVisibility();
     const allowed = Boolean(currentUser && isAdmin());
     const menu = document.getElementById('employeesMenuItem');
     const page = document.getElementById('employees');

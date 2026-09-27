@@ -1,0 +1,27 @@
+const {PGlite}=require(require('node:path').join(process.env.TEMP,'lawfirm-backup-sql-test/node_modules/@electric-sql/pglite'));
+const fs=require('node:fs'),assert=require('node:assert/strict');
+(async()=>{
+const db=new PGlite();
+await db.exec(`create role anon;create role authenticated;create schema auth;
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth to authenticated;
+create table profiles(id uuid,role text,status text,full_name text,username text);
+insert into profiles values ('00000000-0000-0000-0000-000000000001','admin','approved','Manager','admin'),('00000000-0000-0000-0000-000000000002','employee','approved','Employee','employee');
+grant select on profiles to authenticated;`);
+for(const table of ['companies','clients','cases','case_sessions','client_expenses','tasks','company_tasks']) await db.exec(`create table ${table}(id int primary key,name text);grant select,insert,update,delete on ${table} to authenticated;`);
+await db.exec(fs.readFileSync('migrations/003_activity_log.sql','utf8'));
+await db.exec(`set role authenticated;set request.jwt.claim.sub='00000000-0000-0000-0000-000000000002';`);
+for(const table of ['companies','clients','cases','case_sessions','client_expenses','tasks','company_tasks']) await db.exec(`insert into ${table} values(1,'Original');update ${table} set name='Changed';update ${table} set name='Changed';delete from ${table};`);
+assert.equal((await db.query('select * from activity_log')).rows.length,0);
+await assert.rejects(()=>db.exec("insert into activity_log(actor_name,action,table_name) values('Fake','INSERT','cases')"),/permission denied/);
+await assert.rejects(()=>db.exec('delete from activity_log'),/permission denied/);
+await assert.rejects(()=>db.exec("update activity_log set actor_name='Fake'"),/permission denied/);
+await db.exec("set request.jwt.claim.sub='00000000-0000-0000-0000-000000000001'");
+const rows=(await db.query('select * from activity_log order by id')).rows;
+assert.equal(rows.length,21);assert.equal(rows[0].actor_name,'Employee');assert.equal(rows[0].actor_id,'00000000-0000-0000-0000-000000000002');assert.deepEqual(rows[1].changed_fields,['name']);assert.equal(rows[2].record_label,'Changed');
+await assert.rejects(()=>db.exec('delete from activity_log'),/permission denied/);
+await db.exec("begin;insert into companies values(9,'Rollback');rollback;");assert.equal((await db.query('select * from activity_log')).rows.length,21);
+await db.exec("reset role;update profiles set status='pending' where role='admin';set role authenticated;");assert.equal((await db.query('select * from activity_log')).rows.length,0);
+await db.exec('reset role;set role anon;');await assert.rejects(()=>db.query('select * from activity_log'),/permission denied/);
+await db.close();console.log('PASS: seven tables, identity, changed fields, delete label, no-op updates, rollback, employee/admin/anon permissions.');
+})().catch(e=>{console.error(e);process.exit(1)});
