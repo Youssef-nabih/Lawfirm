@@ -548,10 +548,12 @@
                     <div class="form-grid">
                         <div class="form-group"><label>موضوع/اسم القضية *</label><input type="text" id="caseName"></div>
                         <div class="form-group"><label>اسم الموكل</label><input type="text" id="clientName"></div>
+                        <div class="form-group"><label for="clientRole">صفة الموكل</label><input type="text" id="clientRole" list="caseRoleSuggestions" placeholder="اختر أو اكتب الصفة"></div>
                         <div class="form-group"><label>رقم التوكيل</label><input type="text" id="powerOfAttorneyNo"></div>
                         <div class="form-group"><label>مكان الإصدار</label><input type="text" id="poaIssuePlace"></div>
                         <div class="form-group"><label>سنة الإصدار</label><input type="text" id="poaIssueYear"></div>
                         <div class="form-group"><label>اسم الخصم</label><input type="text" id="opponentName"></div>
+                        <div class="form-group"><label for="opponentRole">صفة الخصم</label><input type="text" id="opponentRole" list="caseRoleSuggestions" placeholder="اختر أو اكتب الصفة"></div>
                         <div class="form-group"><label>رقم تليفون الخصم</label><input type="text" id="opponentPhone"></div>
                         <div class="form-group">
                             <label>نوع القضية</label>
@@ -649,6 +651,8 @@
                     <ul id="tasksList" style="list-style:none;" aria-live="polite"></ul>
                 </div>
             </div>
+
+            <datalist id="caseRoleSuggestions"><option value="متهم"></option><option value="مجني عليه"></option><option value="جاني"></option><option value="مدعي"></option><option value="مدعى عليه"></option><option value="مدعي بالحق المدني"></option><option value="مستأنف"></option><option value="مستأنف ضده"></option><option value="طاعن"></option><option value="مطعون ضده"></option></datalist>
 
             <!-- إدارة الموكلين -->
             <div id="clients" class="page-section">
@@ -803,10 +807,12 @@
             <div class="form-grid">
                 <div class="form-group"><label>موضوع القضية</label><input type="text" id="editCaseName"></div>
                 <div class="form-group"><label>اسم الموكل</label><input type="text" id="editClientName"></div>
+                        <div class="form-group"><label for="editClientRole">صفة الموكل</label><input type="text" id="editClientRole" list="caseRoleSuggestions" placeholder="اختر أو اكتب الصفة"></div>
                 <div class="form-group"><label>رقم التوكيل</label><input type="text" id="editPowerOfAttorneyNo"></div>
                 <div class="form-group"><label>مكان الإصدار</label><input type="text" id="editPoaIssuePlace"></div>
                 <div class="form-group"><label>سنة الإصدار</label><input type="text" id="editPoaIssueYear"></div>
                 <div class="form-group"><label>اسم الخصم</label><input type="text" id="editOpponentName"></div>
+                        <div class="form-group"><label for="editOpponentRole">صفة الخصم</label><input type="text" id="editOpponentRole" list="caseRoleSuggestions" placeholder="اختر أو اكتب الصفة"></div>
                 <div class="form-group"><label>هاتف الخصم</label><input type="text" id="editOpponentPhone"></div>
                 <div class="form-group"><label>نوع القضية</label><input type="text" id="editCaseType"></div>
                 <div class="form-group"><label>رقم القضية</label><input type="text" id="editCaseNumber"></div>

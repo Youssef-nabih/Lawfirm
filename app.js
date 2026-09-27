@@ -2448,6 +2448,7 @@ function renderCasesTable(
                                 c.client_name ||
                                 'غير محدد'
                             )}
+                            ${c.client_role ? `<br><small>الصفة: ${escapeHtml(c.client_role)}</small>` : ''}
                         </td>
 
                         <td>
@@ -2456,6 +2457,7 @@ function renderCasesTable(
                                 c.opponent ||
                                 'غير محدد'
                             )}
+                            ${c.opponent_role ? `<br><small>الصفة: ${escapeHtml(c.opponent_role)}</small>` : ''}
 
                             ${
                                 c.opponent_phone
@@ -2829,6 +2831,9 @@ async function addCase() {
 
     const newCase = {
 
+        client_role: document.getElementById('clientRole')?.value.trim() || '',
+        opponent_role: document.getElementById('opponentRole')?.value.trim() || '',
+
         name,
         client_name,
         power_of_attorney_no,
@@ -2985,6 +2990,8 @@ async function addCase() {
         'poaIssuePlace',
         'poaIssueYear',
         'opponentName',
+        'clientRole',
+        'opponentRole',
         'opponentPhone',
         'caseNumber',
         'caseYear',
@@ -3113,6 +3120,9 @@ async function openEditModal(
         'editClientName',
         item.client_name
     );
+
+    setValue('editClientRole', item.client_role);
+    setValue('editOpponentRole', item.opponent_role);
 
     setValue(
         'editPowerOfAttorneyNo',
@@ -3548,6 +3558,9 @@ async function saveCaseUpdate() {
 
     const updateData = {
 
+        client_role: getValue('editClientRole'),
+        opponent_role: getValue('editOpponentRole'),
+
         name,
         client_name,
         power_of_attorney_no,
@@ -3947,6 +3960,14 @@ async function openCaseDetails(
                     </strong>
                 </div>
 
+                <div class="details-item">
+                    <label>صفة الموكل</label>
+                    <strong>${escapeHtml(item.client_role || '-')}</strong>
+                </div>
+                <div class="details-item">
+                    <label>صفة الخصم</label>
+                    <strong>${escapeHtml(item.opponent_role || '-')}</strong>
+                </div>
                 <div class="details-item">
                     <label>هاتف الخصم</label>
                     <strong>
