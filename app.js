@@ -760,6 +760,7 @@ async function loadCurrentProfile(userId) {
 function updateUserInterface() {
 
     updateEmployeesVisibility();
+    if (window.updateBackupVisibility) window.updateBackupVisibility();
 
     if (!currentProfile) return;
 
@@ -1040,6 +1041,7 @@ async function logoutUser() {
     currentUser = null;
     currentProfile = null;
     updateEmployeesVisibility();
+    if (window.updateBackupVisibility) window.updateBackupVisibility();
 
     allCasesCache = [];
     allCompaniesCache = [];
@@ -6117,6 +6119,7 @@ function updateEmployeesVisibility() {
 async function fetchEmployees() {
     if (!currentUser || !isAdmin()) {
         updateEmployeesVisibility();
+    if (window.updateBackupVisibility) window.updateBackupVisibility();
         return;
     }
     const body = document.getElementById('employeesTableBody');
