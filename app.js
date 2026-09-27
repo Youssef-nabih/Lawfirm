@@ -5453,6 +5453,7 @@ async function fetchTasks() {
         await db
             .from('tasks')
             .select('*')
+            .order('due_date', { ascending: true, nullsFirst: false })
             .order(
                 'id',
                 {
@@ -5495,13 +5496,15 @@ async function fetchTasks() {
 
     if (!list) return;
 
+    const selectedDate = document.getElementById('taskDateFilter')?.value || '';
+    const visibleTasks = (data || []).filter(t => !selectedDate || t.due_date === selectedDate);
+
     if (
-        !data ||
-        data.length === 0
+        visibleTasks.length === 0
     ) {
 
         list.innerHTML =
-            '<li style="padding:12px;text-align:center;color:#777;">لا توجد مهام حالية</li>';
+            `<li style="padding:12px;text-align:center;color:#777;">${selectedDate ? 'لا توجد مهام في اليوم المحدد' : 'لا توجد مهام حالية'}</li>`;
 
         return;
     }
@@ -5517,7 +5520,7 @@ async function fetchTasks() {
     );
 
     list.innerHTML =
-        data
+        visibleTasks
             .map(t => {
 
                 let isOverdue = false;

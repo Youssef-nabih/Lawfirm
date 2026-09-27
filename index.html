@@ -640,7 +640,13 @@
                         </div>
                         <button class="btn btn-primary" onclick="addTask()">إضافة المهمة</button>
                     </div>
-                    <ul id="tasksList" style="list-style:none;"></ul>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+                        <label for="taskDateFilter">تصفية حسب تاريخ التنفيذ</label>
+                        <input type="date" id="taskDateFilter" onchange="fetchTasks()" style="padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('taskDateFilter').value = ''; fetchTasks();">عرض كل المهام</button>
+                        <span style="color:#64748b;">الأقرب أولًا، والمهام بدون تاريخ في النهاية</span>
+                    </div>
+                    <ul id="tasksList" style="list-style:none;" aria-live="polite"></ul>
                 </div>
             </div>
 
