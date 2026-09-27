@@ -227,7 +227,7 @@ function createLoginScreen() {
                 <i class="fa-solid fa-scale-balanced"></i>
             </div>
 
-            <h2>نظام إدارة مكتب المحاماة</h2>
+            <h2>نظام إدارة مكتب احمد نبيه المحامي</h2>
 
             <div class="login-subtitle">
                 قم بتسجيل الدخول للمتابعة
@@ -1485,6 +1485,7 @@ function renderCompaniesTable(
                         </td>
 
                         <td>
+                            <button class="btn btn-sm btn-primary" onclick="openCompanyWorkspace(${c.id})"><i class="fa-solid fa-list-check"></i> ملف الشركة والمهام</button>
                             ${adminActions}
                         </td>
 
@@ -1708,13 +1709,14 @@ async function addCompany() {
     };
 
     const {
+        data: savedCompany,
         error
     } =
         await db
             .from('companies')
             .insert([
                 newCompany
-            ]);
+            ]).select().single();
 
     if (error) {
 
@@ -1758,7 +1760,8 @@ async function addCompany() {
         }
     );
 
-    fetchCompanies();
+    await fetchCompanies();
+    if (savedCompany) openCompanyWorkspace(savedCompany.id);
 }
 
 function openEditCompanyModal(id) {
