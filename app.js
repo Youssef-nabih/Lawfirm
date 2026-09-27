@@ -1721,10 +1721,10 @@ async function addCompany() {
             .getElementById('compParentId')
             ?.value || null;
 
-    if (!name || !tax_id || !email) {
+    if (!name) {
 
         return alert(
-            'برجاء ملء الحقول الأساسية المطلوبة: اسم الشركة، الرقم الضريبي، والبريد الإلكتروني.'
+            'برجاء إدخال اسم الشركة.'
         );
     }
 
@@ -1972,10 +1972,10 @@ async function saveCompanyUpdate() {
             'editCompStatus'
         ).value;
 
-    if (!name || !tax_id || !email) {
+    if (!name) {
 
         return alert(
-            'الاسم والرقم الضريبي والبريد الإلكتروني مطلوبين.'
+            'اسم الشركة مطلوب.'
         );
     }
 
@@ -4481,10 +4481,10 @@ async function addClient() {
             ? phoneInput.value.trim()
             : '';
 
-    if (!name || !phone) {
+    if (!name) {
 
         return alert(
-            'يرجى إدخال اسم الموكل ورقم الهاتف'
+            'يرجى إدخال اسم الموكل'
         );
     }
 
@@ -5232,10 +5232,10 @@ async function saveClientUpdate() {
         );
     }
 
-    if (!name || !phone) {
+    if (!name) {
 
         return alert(
-            'اسم الموكل ورقم الهاتف مطلوبان.'
+            'اسم الموكل مطلوب.'
         );
     }
 
