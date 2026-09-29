@@ -2355,6 +2355,7 @@ async function fetchCases() {
     renderCasesTable(
         allCasesCache
     );
+    window.refreshOfficeSessions?.();
 }
 
 function renderCasesTable(
@@ -4151,6 +4152,7 @@ async function openCaseDetails(
     document.body.appendChild(
         overlay
     );
+    window.enhanceCaseWorkspace?.(overlay, item, sessions || []);
     preparePopup(overlay, closeDynamicCaseDetails);
 }
 
@@ -5517,6 +5519,7 @@ async function fetchTasks() {
 
     if (!list) return;
 
+    window.updateOfficeTasks?.(data || []);
     const selectedDate = document.getElementById('taskDateFilter')?.value || '';
     const visibleTasks = (data || []).filter(t => !selectedDate || t.due_date === selectedDate);
 
@@ -5605,8 +5608,9 @@ async function fetchTasks() {
                                 class="btn btn-sm btn-warning"
                                 onclick="editTaskInline(
                                     ${t.id},
-                                    '${safeTitle}',
-                                    '${t.due_date || ''}'
+                                    '${escapeHtml(safeTitle)}',
+                                    '${t.due_date || ''}',
+                                    ${t.is_important === true}
                                 )"
                             >
 
@@ -5658,6 +5662,7 @@ async function fetchTasks() {
 
                     <li
                         id="task-item-${t.id}"
+                        class="${t.is_important ? 'task-important' : ''} ${t.completed ? 'task-completed' : ''}"
                         style="
                             padding:12px;
                             border:1px solid ${borderColor};
@@ -5677,6 +5682,8 @@ async function fetchTasks() {
                     >
 
                         <div style="flex-grow:1;">
+
+                            ${t.is_important ? '<span class="task-importance-badge">★ مهمة جدًا</span>' : ''}
 
                             <span style="${
                                 t.completed
@@ -5795,6 +5802,7 @@ async function addTask() {
                     title: title,
                     assigned_to: 'المكتب',
                     completed: false,
+                    is_important: document.getElementById('taskImportant').checked,
                     due_date: dueDate,
                     created_at:
                         new Date().toISOString()
@@ -5809,14 +5817,14 @@ async function addTask() {
         );
 
         return alert(
-            'خطأ أثناء الإضافة: ' +
-            error.message
+            (['42703','PGRST204'].includes(error.code) ? 'يلزم تفعيل ميزة أهمية المهام بتشغيل ملف 005_task_importance.sql. ' : 'خطأ أثناء الإضافة: ') + error.message
         );
     }
 
     if (taskInput) {
         taskInput.value = '';
     }
+    document.getElementById('taskImportant').checked = false;
 
     if (dueDateInput) {
         dueDateInput.value = '';
@@ -5828,7 +5836,8 @@ async function addTask() {
 function editTaskInline(
     taskId,
     currentTitle,
-    currentDueDate
+    currentDueDate,
+    currentImportant = false
 ) {
 
     if (!requireAdmin()) return;
@@ -5870,6 +5879,8 @@ function editTaskInline(
                 class="form-control"
                 style="flex:1;"
             >
+
+            <label class="task-importance-control"><input type="checkbox" id="edit-task-important-${taskId}" ${currentImportant ? 'checked' : ''}> ★ مهمة جدًا</label>
 
         </div>
 
@@ -5954,7 +5965,8 @@ async function saveTaskUpdate(
             .from('tasks')
             .update({
                 title: newTitle,
-                due_date: newDueDate
+                due_date: newDueDate,
+                is_important: document.getElementById(`edit-task-important-${taskId}`).checked
             })
             .eq(
                 'id',

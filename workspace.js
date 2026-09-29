@@ -31,6 +31,7 @@ function canEditCompanyTasks() {
     return Boolean(currentUser && currentProfile?.status === 'approved' && ['admin','employee'].includes(currentProfile.role));
 }
 function companyTaskError(error) {
+    if (['42703','PGRST204'].includes(error?.code)) return 'يلزم تفعيل أهمية المهام بتشغيل ملف 005_task_importance.sql في قاعدة البيانات.';
     if (['42P01','PGRST205'].includes(error?.code)) return 'مهام الشركات غير مفعّلة بعد. يرجى التواصل مع مسؤول النظام لتفعيلها.';
     return 'تعذر حفظ أو تحميل المهام. تحقق من الاتصال وصلاحيات حسابك ثم حاول مرة أخرى.';
 }
@@ -56,7 +57,7 @@ async function openCompanyWorkspace(id) {
         <div class="panel-header"><div><h2>مهام الشركة</h2><p class="section-note">أعمال ومواعيد خاصة بهذه الشركة، مستقلة عن المهام العامة.</p></div><button type="button" class="btn btn-secondary" data-refresh>تحديث</button></div>
         <form class="company-form" ${canEditCompanyTasks() ? '' : 'hidden'}>
             <div class="form-grid"><div class="form-group"><label for="companyTaskTitle">عنوان المهمة</label><input id="companyTaskTitle" name="title" required maxlength="250" placeholder="مثال: تجديد السجل التجاري"></div><div class="form-group"><label for="companyTaskDate">موعد التنفيذ</label><input id="companyTaskDate" name="due_date" type="date" required></div></div>
-            <div class="form-group"><label for="companyTaskDescription">تفاصيل المهمة <span class="section-note">(اختياري)</span></label><textarea id="companyTaskDescription" name="description" rows="3" maxlength="5000" placeholder="أضف التفاصيل المطلوبة لتنفيذ المهمة"></textarea></div>
+            <label class="task-importance-control"><input type="checkbox" name="is_important"> ★ مهمة جدًا</label><div class="form-group"><label for="companyTaskDescription">تفاصيل المهمة <span class="section-note">(اختياري)</span></label><textarea id="companyTaskDescription" name="description" rows="3" maxlength="5000" placeholder="أضف التفاصيل المطلوبة لتنفيذ المهمة"></textarea></div>
             <div class="company-task-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit" data-save>إضافة المهمة</button><button class="btn btn-secondary" type="button" data-cancel hidden>إلغاء التعديل</button></div>
         </form>
         <p class="task-message" role="status" aria-live="polite"></p><div class="company-task-list" aria-live="polite"></div>
@@ -102,9 +103,9 @@ function renderCompanyTasks(state) {
     state.tasks.forEach(task => {
         const overdue = !task.completed && task.due_date && new Date(task.due_date+'T00:00:00') < today;
         const card = document.createElement('article');
-        card.className = 'company-task' + (task.completed ? ' completed' : '');
+        card.className = 'company-task' + (task.completed ? ' completed task-completed' : '') + (task.is_important ? ' task-important' : '');
         const status = task.completed ? 'مكتملة' : overdue ? 'متأخرة' : 'قيد التنفيذ';
-        card.innerHTML = `<div><span class="badge ${task.completed ? 'badge-active' : overdue ? 'badge-suspended' : 'badge-pending'}">${status}</span><h3>${escapeHtml(task.title)}</h3><p>${escapeHtml(task.description || '')}</p><time>${task.due_date ? 'موعد التنفيذ: '+escapeHtml(task.due_date) : 'بدون موعد'}</time></div>`;
+        card.innerHTML = `<div>${task.is_important ? '<span class="task-importance-badge">★ مهمة جدًا</span>' : ''}<span class="badge ${task.completed ? 'badge-active' : overdue ? 'badge-suspended' : 'badge-pending'}">${status}</span><h3>${escapeHtml(task.title)}</h3><p>${escapeHtml(task.description || '')}</p><time>${task.due_date ? 'موعد التنفيذ: '+escapeHtml(task.due_date) : 'بدون موعد'}</time></div>`;
         if (canEditCompanyTasks()) {
             const actions = document.createElement('div'); actions.className='company-task-actions';
             const addAction = (label,style,handler) => {const button=document.createElement('button');button.type='button';button.className='btn btn-sm '+style;button.textContent=label;button.onclick=handler;actions.append(button);};
@@ -115,6 +116,7 @@ function renderCompanyTasks(state) {
                 form.elements.title.value=task.title;
                 form.elements.description.value=task.description || '';
                 form.elements.due_date.value=task.due_date || '';
+                form.elements.is_important.checked=task.is_important === true;
                 state.overlay.querySelector('[data-save]').textContent='حفظ التعديلات';
                 state.overlay.querySelector('[data-cancel]').hidden=false;
                 form.elements.title.focus();
@@ -128,7 +130,7 @@ function renderCompanyTasks(state) {
 async function saveCompanyTask(state) {
     if (state !== companyWorkspace || state.busy || !canEditCompanyTasks()) return;
     const form=state.overlay.querySelector('form');
-    const payload={title:form.elements.title.value.trim(),description:form.elements.description.value.trim(),due_date:form.elements.due_date.value};
+    const payload={title:form.elements.title.value.trim(),description:form.elements.description.value.trim(),due_date:form.elements.due_date.value,is_important:form.elements.is_important.checked};
     if (!payload.title || !payload.due_date) {state.overlay.querySelector('.task-message').textContent='أدخل عنوان المهمة وموعد التنفيذ.';return;}
     setCompanyBusy(state,true);
     let success=false;

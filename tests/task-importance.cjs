@@ -1,0 +1,32 @@
+const {chromium}=require('C:/Users/Ahmed Nabih/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs=require('node:fs'),assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,channel:'msedge'});
+ const page=await browser.newPage({viewport:{width:1000,height:900}});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setContent(fs.readFileSync('index.html','utf8').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,''));
+ await page.addStyleTag({content:fs.readFileSync('theme.css','utf8')});
+ await page.evaluate(()=>{
+  window.rows={tasks:[],company_tasks:[]};
+  window.supabase={createClient:()=>({from(table){let action='select',payload,filters=[];const q={select(){return q},order(){return q},eq(k,v){filters.push([k,v]);return q},insert(p){action='insert';payload=p;return q},update(p){action='update';payload=p;return q},then(resolve){let data=rows[table]||[];if(action==='insert'){const p=Array.isArray(payload)?payload:[payload];data=p.map((r,i)=>({id:rows[table].length+i+1,...r}));rows[table].push(...data)}else{data=data.filter(r=>filters.every(([k,v])=>r[k]===v));if(action==='update')data.forEach(r=>Object.assign(r,payload));}return Promise.resolve(resolve({data:structuredClone(data),error:null}))}};return q;}})};
+ });
+ for(const file of ['app.js','workspace.js'])await page.addScriptTag({content:fs.readFileSync(file,'utf8')});
+ await page.evaluate(()=>{currentUser={id:'test'};currentProfile={role:'admin',status:'approved'};document.getElementById('loginScreen').classList.add('hidden');switchPage('tasks');});
+ await page.locator('#taskTitle').fill('مراجعة مهمة "للموكل"');await page.locator('#taskDueDate').fill('2027-01-01');await page.locator('#taskImportant').check();
+ await page.getByRole('button',{name:'إضافة المهمة',exact:true}).click();await page.locator('#task-item-1.task-important').waitFor();
+ assert.equal(await page.evaluate(()=>rows.tasks[0].is_important),true);
+ await page.evaluate(()=>fetchTasks());assert.equal(await page.locator('#task-item-1 .task-importance-badge').count(),1);
+ await page.locator('#task-item-1').getByRole('button',{name:'تعديل',exact:true}).click();assert.ok(await page.locator('#edit-task-important-1').isChecked());
+ await page.locator('#edit-task-important-1').uncheck();await page.getByRole('button',{name:'حفظ',exact:true}).click();await page.locator('#task-item-1:not(.task-important)').waitFor();
+ assert.equal(await page.evaluate(()=>rows.tasks[0].is_important),false);
+ await page.evaluate(()=>{rows.tasks[0].is_important=true;return fetchTasks()});
+ await page.locator('#task-item-1').getByRole('button',{name:'تمت',exact:true}).click();await page.locator('#task-item-1.task-completed.task-important').waitFor();
+ await page.evaluate(()=>{allCompaniesCache=[{id:1,name:'شركة اختبار'}];return openCompanyWorkspace(1)});
+ await page.locator('#companyTaskTitle').fill('تجديد الترخيص');await page.locator('#companyTaskDate').fill('2027-02-01');await page.locator('[name=is_important]').check();await page.locator('[data-save]').click();await page.locator('.company-task.task-important').waitFor();
+ assert.equal(await page.evaluate(()=>rows.company_tasks[0].is_important),true);
+ await page.locator('.company-task').getByRole('button',{name:'تعديل',exact:true}).click();assert.ok(await page.locator('[name=is_important]').isChecked());
+ await page.locator('[name=is_important]').uncheck();await page.locator('[data-save]').click();await page.locator('.company-task:not(.task-important)').waitFor();
+ await page.evaluate(()=>{closeCompanyWorkspace();currentProfile.role='viewer';return fetchTasks()});assert.equal(await page.locator('#task-item-1').getByRole('button',{name:'تعديل',exact:true}).count(),0);
+ await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ assert.deepEqual(errors,[]);await browser.close();console.log('PASS: create, reload, edit importance on/off, quoted title, completion, company tasks, viewer permissions and mobile.');
+})().catch(e=>{console.error(e);process.exit(1)});
