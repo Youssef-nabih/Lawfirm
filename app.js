@@ -2880,8 +2880,6 @@ async function addCase() {
             );
         }
 
-        if (!await recordNameAvailable('cases', name)) return;
-
         const attachment_url =
             await uploadFileToSupabase(
                 'caseAttachmentInput'
@@ -3614,8 +3612,6 @@ async function saveCaseUpdate() {
                 'اسم القضية مطلوب'
             );
         }
-
-        if (!await recordNameAvailable('cases', name, id)) return;
 
         const updateData = {
 

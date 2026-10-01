@@ -18,9 +18,6 @@ $$;
 create unique index if not exists office_unique_companies_name
     on public.companies (public.office_normalize_record_name(name))
     where public.office_normalize_record_name(name) <> '';
-create unique index if not exists office_unique_cases_name
-    on public.cases (public.office_normalize_record_name(name))
-    where public.office_normalize_record_name(name) <> '';
 create unique index if not exists office_unique_clients_name
     on public.clients (public.office_normalize_record_name(name))
     where public.office_normalize_record_name(name) <> '';

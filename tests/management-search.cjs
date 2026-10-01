@@ -66,20 +66,28 @@ const fs = require('node:fs'), assert = require('node:assert/strict');
         }
         await page.evaluate(async () => {
             document.getElementById('compName').value='  شركة   النور ';
-            document.getElementById('caseName').value='قَضية أحمد';
             document.getElementById('clientFormName').value='أحمد   محمد';
             // Current server records must win even with empty/stale caches.
             allCompaniesCache=[];allCasesCache=[];allClientsCache=[];
-            await addCompany();await addCase();await addClient();
+            await addCompany();await addClient();
             document.getElementById('editCompId').value='2';document.getElementById('editCompName').value='شركة النور';
-            document.getElementById('editCaseId').value='2';document.getElementById('editCaseName').value='قضية أحمد';
             for (const [id,value] of [['dynamicEditClientId','2'],['dynamicEditClientName','أحمد محمد'],['dynamicEditClientPhone','']]) {
                 const el=document.createElement('input');el.id=id;el.value=value;document.body.append(el);
             }
-            await saveCompanyUpdate();await saveCaseUpdate();await saveClientUpdate();
+            await saveCompanyUpdate();await saveClientUpdate();
         });
-        assert.equal(alerts.filter(a => a.includes('الاسم موجود بالفعل')).length,6);
+        assert.equal(alerts.filter(a => a.includes('الاسم موجود بالفعل')).length,4);
         assert.deepEqual(await page.evaluate(() => [writes.length,uploads]),[0,0]);
+        await page.evaluate(async () => {
+            document.getElementById('caseName').value='قضية أحمد';
+            await addCase();
+            document.getElementById('editCaseId').value='2';document.getElementById('editCaseName').value='قضية أحمد';
+            await saveCaseUpdate();
+        });
+        assert.equal(await page.evaluate(() => rows.cases.filter(r => r.name==='قضية أحمد').length),3);
+        assert.deepEqual(await page.evaluate(() => writes.map(w => [w.table,w.action])),[['cases','insert'],['cases','update']]);
+        assert.equal(alerts.filter(a => a.includes('الاسم موجود بالفعل')).length,4);
+        await page.evaluate(() => {writes=[];uploads=0});
         assert.equal(await page.evaluate(() => recordNameAvailable('clients','أحمد محمد','1')),true);
         assert.equal(await page.evaluate(() => recordNameAvailable('clients','أحمد محمد','2')),false);
         await page.evaluate(() => {readFailure=true;document.getElementById('clientFormName').value='اسم جديد'});
