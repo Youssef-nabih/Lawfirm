@@ -31,3 +31,5 @@ th{background:#f5f7f3;color:#71807a;font-size:12px;padding:15px;font-weight:500;
 #activities table { min-width:900px; }
 #activities td:nth-child(1) { min-width:160px; }
 #activities td:nth-child(2) { min-width:180px; }
+/* Keep management filters readable on both desktop and mobile. */
+.management-search { margin-bottom: 18px; width: 100%; max-width: 560px; }

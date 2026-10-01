@@ -528,6 +528,7 @@
 
                 <div class="panel">
                     <div class="panel-header"><h2>دليل الشركات المسجلة</h2></div>
+                    <div class="form-group management-search"><label for="companiesSearch">بحث في الشركات</label><input type="search" id="companiesSearch" placeholder="اسم الشركة، الرقم الضريبي أو بيانات التواصل" oninput="renderCompaniesTable(allCompaniesCache)"></div>
                     <table>
                         <thead>
                             <tr>
@@ -619,6 +620,7 @@
 
                 <div class="panel">
                     <div class="panel-header"><h2>جدول القضايا الشامل</h2></div>
+                    <div class="form-group management-search"><label for="casesSearch">بحث في القضايا</label><input type="search" id="casesSearch" placeholder="اسم القضية، الموكل، الخصم، الرقم أو المحكمة" oninput="renderCasesTable(allCasesCache)"></div>
                     <table style="width:100%;">
                         <thead>
                             <tr>
@@ -685,6 +687,7 @@
 
                 <div class="panel">
                     <div class="panel-header"><h2>قائمة الموكلين</h2></div>
+                    <div class="form-group management-search"><label for="clientsSearch">بحث في الموكلين</label><input type="search" id="clientsSearch" placeholder="اسم الموكل أو رقم الهاتف" oninput="renderClientsTable(allClientsCache)"></div>
                     <table>
                         <thead>
                             <tr>

@@ -12,6 +12,47 @@ let currentProfile = null;
 let realtimeStarted = false;
 let profileLoadError = '';
 
+function normalizeRecordText(value) {
+    return String(value ?? '').normalize('NFKC').replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+        .replace(/\s+/g, ' ').trim().toLocaleLowerCase('ar');
+}
+
+function filterManagementRows(rows, inputId, fields) {
+    const term = normalizeRecordText(document.getElementById(inputId)?.value);
+    return term ? rows.filter(row => fields.some(field => normalizeRecordText(row[field]).includes(term))) : rows;
+}
+
+const recordSaveLocks = new Set();
+function recordSaveError(error, prefix) {
+    return error.code === '23505' && String(error.message).includes('office_unique_')
+        ? 'الاسم موجود بالفعل. يرجى إدخال اسم آخر.' : prefix + error.message;
+}
+async function withRecordSaveLock(table, save) {
+    if (recordSaveLocks.has(table)) return;
+    recordSaveLocks.add(table);
+    try { return await save(); }
+    finally { recordSaveLocks.delete(table); }
+}
+
+// Read current visible records, including pages beyond Supabase's default limit.
+async function recordNameAvailable(table, name, excludedId = null) {
+    try {
+        const normalized = normalizeRecordText(name);
+        for (let offset = 0; ; offset += 1000) {
+            const {data, error} = await db.from(table).select('id, name').order('id').range(offset, offset + 999);
+            if (error) throw error;
+            if ((data || []).some(row => String(row.id) !== String(excludedId) && normalizeRecordText(row.name) === normalized)) {
+                alert('الاسم موجود بالفعل. يرجى إدخال اسم آخر.');
+                return false;
+            }
+            if (!data || data.length < 1000) return true;
+        }
+    } catch (error) {
+        alert('تعذر التحقق من تكرار الاسم. حاول مرة أخرى.');
+        return false;
+    }
+}
+
 // Session inputs and labels always use the office timezone, not the device timezone.
 const sessionDateParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -1365,6 +1406,8 @@ function renderCompaniesTable(
     companiesData
 ) {
 
+    companiesData = filterManagementRows(companiesData || [], 'companiesSearch', ['name', 'legal_name', 'tax_id', 'commercial_register', 'phone', 'email']);
+
     const tbody =
         document.getElementById(
             'companiesTableBody'
@@ -1378,7 +1421,7 @@ function renderCompaniesTable(
     ) {
 
         tbody.innerHTML =
-            '<tr><td colspan="8" style="text-align:center;">لا توجد شركات مسجلة حالياً</td></tr>';
+            '<tr><td colspan="8" style="text-align:center;">لا توجد شركات مطابقة للبحث أو مسجلة حالياً</td></tr>';
 
         return;
     }
@@ -1614,202 +1657,205 @@ function populateParentCompanyDropdown() {
 async function addCompany() {
 
     if (!requireLogin()) return;
+    return withRecordSaveLock('companies', async () => {
 
-    const name =
-        document
-            .getElementById('compName')
-            ?.value
-            .trim();
+        const name =
+            document
+                .getElementById('compName')
+                ?.value
+                .trim();
 
-    const legal_name =
-        document
-            .getElementById('compLegalName')
-            ?.value
-            .trim();
+        const legal_name =
+            document
+                .getElementById('compLegalName')
+                ?.value
+                .trim();
 
-    const tax_id =
-        document
-            .getElementById('compTaxId')
-            ?.value
-            .trim();
+        const tax_id =
+            document
+                .getElementById('compTaxId')
+                ?.value
+                .trim();
 
-    const commercial_register =
-        document
-            .getElementById(
-                'compCommercialRegister'
-            )
-            ?.value
-            .trim();
+        const commercial_register =
+            document
+                .getElementById(
+                    'compCommercialRegister'
+                )
+                ?.value
+                .trim();
 
-    const industry =
-        document
-            .getElementById('compIndustry')
-            ?.value;
+        const industry =
+            document
+                .getElementById('compIndustry')
+                ?.value;
 
-    const company_size =
-        document
-            .getElementById('compSize')
-            ?.value;
+        const company_size =
+            document
+                .getElementById('compSize')
+                ?.value;
 
-    const email =
-        document
-            .getElementById('compEmail')
-            ?.value
-            .trim();
+        const email =
+            document
+                .getElementById('compEmail')
+                ?.value
+                .trim();
 
-    const phone =
-        document
-            .getElementById('compPhone')
-            ?.value
-            .trim();
+        const phone =
+            document
+                .getElementById('compPhone')
+                ?.value
+                .trim();
 
-    const website =
-        document
-            .getElementById('compWebsite')
-            ?.value
-            .trim();
+        const website =
+            document
+                .getElementById('compWebsite')
+                ?.value
+                .trim();
 
-    const country =
-        document
-            .getElementById('compCountry')
-            ?.value
-            .trim();
+        const country =
+            document
+                .getElementById('compCountry')
+                ?.value
+                .trim();
 
-    const state_province =
-        document
-            .getElementById('compState')
-            ?.value
-            .trim();
+        const state_province =
+            document
+                .getElementById('compState')
+                ?.value
+                .trim();
 
-    const city =
-        document
-            .getElementById('compCity')
-            ?.value
-            .trim();
+        const city =
+            document
+                .getElementById('compCity')
+                ?.value
+                .trim();
 
-    const postal_code =
-        document
-            .getElementById('compPostalCode')
-            ?.value
-            .trim();
+        const postal_code =
+            document
+                .getElementById('compPostalCode')
+                ?.value
+                .trim();
 
-    const address_street =
-        document
-            .getElementById(
-                'compAddressStreet'
-            )
-            ?.value
-            .trim();
+        const address_street =
+            document
+                .getElementById(
+                    'compAddressStreet'
+                )
+                ?.value
+                .trim();
 
-    const currency =
-        document
-            .getElementById('compCurrency')
-            ?.value;
+        const currency =
+            document
+                .getElementById('compCurrency')
+                ?.value;
 
-    const status =
-        document
-            .getElementById('compStatus')
-            ?.value;
+        const status =
+            document
+                .getElementById('compStatus')
+                ?.value;
 
-    const is_parent =
-        document
-            .getElementById('compIsParent')
-            ?.value === 'true';
+        const is_parent =
+            document
+                .getElementById('compIsParent')
+                ?.value === 'true';
 
-    const parent_id =
-        document
-            .getElementById('compParentId')
-            ?.value || null;
+        const parent_id =
+            document
+                .getElementById('compParentId')
+                ?.value || null;
 
-    if (!name) {
+        if (!name) {
 
-        return alert(
-            'برجاء إدخال اسم الشركة.'
-        );
-    }
-
-    const logo_url =
-        await uploadFileToSupabase(
-            'compLogoInput'
-        );
-
-    const newCompany = {
-
-        name,
-        legal_name,
-        tax_id,
-        commercial_register,
-        industry,
-        company_size,
-        logo_url,
-        email,
-        phone,
-        website,
-        country,
-        state_province,
-        city,
-        postal_code,
-        address_street,
-        currency,
-        status,
-        is_parent,
-        parent_id
-    };
-
-    const {
-        data: savedCompany,
-        error
-    } =
-        await db
-            .from('companies')
-            .insert([
-                newCompany
-            ]).select().single();
-
-    if (error) {
-
-        return alert(
-            'حدث خطأ أثناء إضافة الشركة: ' +
-            error.message
-        );
-    }
-
-    alert(
-        'تمت إضافة الشركة بنجاح!'
-    );
-
-    const fieldsToReset = [
-
-        'compName',
-        'compLegalName',
-        'compTaxId',
-        'compCommercialRegister',
-        'compEmail',
-        'compPhone',
-        'compWebsite',
-        'compState',
-        'compCity',
-        'compPostalCode',
-        'compAddressStreet',
-        'compLogoInput'
-    ];
-
-    fieldsToReset.forEach(
-        id => {
-
-            const el =
-                document.getElementById(
-                    id
-                );
-
-            if (el) {
-                el.value = '';
-            }
+            return alert(
+                'برجاء إدخال اسم الشركة.'
+            );
         }
-    );
 
-    await fetchCompanies();
-    if (savedCompany) openCompanyWorkspace(savedCompany.id);
+        if (!await recordNameAvailable('companies', name)) return;
+
+        const logo_url =
+            await uploadFileToSupabase(
+                'compLogoInput'
+            );
+
+        const newCompany = {
+
+            name,
+            legal_name,
+            tax_id,
+            commercial_register,
+            industry,
+            company_size,
+            logo_url,
+            email,
+            phone,
+            website,
+            country,
+            state_province,
+            city,
+            postal_code,
+            address_street,
+            currency,
+            status,
+            is_parent,
+            parent_id
+        };
+
+        const {
+            data: savedCompany,
+            error
+        } =
+            await db
+                .from('companies')
+                .insert([
+                    newCompany
+                ]).select().single();
+
+        if (error) {
+
+            return alert(
+                recordSaveError(error, 'حدث خطأ أثناء إضافة الشركة: ')
+            );
+        }
+
+        alert(
+            'تمت إضافة الشركة بنجاح!'
+        );
+
+        const fieldsToReset = [
+
+            'compName',
+            'compLegalName',
+            'compTaxId',
+            'compCommercialRegister',
+            'compEmail',
+            'compPhone',
+            'compWebsite',
+            'compState',
+            'compCity',
+            'compPostalCode',
+            'compAddressStreet',
+            'compLogoInput'
+        ];
+
+        fieldsToReset.forEach(
+            id => {
+
+                const el =
+                    document.getElementById(
+                        id
+                    );
+
+                if (el) {
+                    el.value = '';
+                }
+            }
+        );
+
+        await fetchCompanies();
+        if (savedCompany) openCompanyWorkspace(savedCompany.id);
+    });
 }
 
 function openEditCompanyModal(id) {
@@ -1911,108 +1957,111 @@ function closeEditCompanyModal() {
 async function saveCompanyUpdate() {
 
     if (!requireAdmin()) return;
+    return withRecordSaveLock('companies', async () => {
 
-    const id =
-        document.getElementById(
-            'editCompId'
-        ).value;
+        const id =
+            document.getElementById(
+                'editCompId'
+            ).value;
 
-    const name =
-        document.getElementById(
-            'editCompName'
-        ).value.trim();
+        const name =
+            document.getElementById(
+                'editCompName'
+            ).value.trim();
 
-    const legal_name =
-        document.getElementById(
-            'editCompLegalName'
-        ).value.trim();
+        const legal_name =
+            document.getElementById(
+                'editCompLegalName'
+            ).value.trim();
 
-    const tax_id =
-        document.getElementById(
-            'editCompTaxId'
-        ).value.trim();
+        const tax_id =
+            document.getElementById(
+                'editCompTaxId'
+            ).value.trim();
 
-    const commercial_register =
-        document.getElementById(
-            'editCompCommercialRegister'
-        ).value.trim();
+        const commercial_register =
+            document.getElementById(
+                'editCompCommercialRegister'
+            ).value.trim();
 
-    const industry =
-        document.getElementById(
-            'editCompIndustry'
-        ).value;
+        const industry =
+            document.getElementById(
+                'editCompIndustry'
+            ).value;
 
-    const company_size =
-        document.getElementById(
-            'editCompSize'
-        ).value;
+        const company_size =
+            document.getElementById(
+                'editCompSize'
+            ).value;
 
-    const email =
-        document.getElementById(
-            'editCompEmail'
-        ).value.trim();
+        const email =
+            document.getElementById(
+                'editCompEmail'
+            ).value.trim();
 
-    const phone =
-        document.getElementById(
-            'editCompPhone'
-        ).value.trim();
+        const phone =
+            document.getElementById(
+                'editCompPhone'
+            ).value.trim();
 
-    const website =
-        document.getElementById(
-            'editCompWebsite'
-        ).value.trim();
+        const website =
+            document.getElementById(
+                'editCompWebsite'
+            ).value.trim();
 
-    const currency =
-        document.getElementById(
-            'editCompCurrency'
-        ).value;
+        const currency =
+            document.getElementById(
+                'editCompCurrency'
+            ).value;
 
-    const status =
-        document.getElementById(
-            'editCompStatus'
-        ).value;
+        const status =
+            document.getElementById(
+                'editCompStatus'
+            ).value;
 
-    if (!name) {
+        if (!name) {
 
-        return alert(
-            'اسم الشركة مطلوب.'
-        );
-    }
+            return alert(
+                'اسم الشركة مطلوب.'
+            );
+        }
 
-    const updateData = {
+        if (!await recordNameAvailable('companies', name, id)) return;
 
-        name,
-        legal_name,
-        tax_id,
-        commercial_register,
-        industry,
-        company_size,
-        email,
-        phone,
-        website,
-        currency,
-        status
-    };
+        const updateData = {
 
-    const {
-        error
-    } =
-        await db
-            .from('companies')
-            .update(updateData)
-            .eq('id', id);
+            name,
+            legal_name,
+            tax_id,
+            commercial_register,
+            industry,
+            company_size,
+            email,
+            phone,
+            website,
+            currency,
+            status
+        };
 
-    if (error) {
+        const {
+            error
+        } =
+            await db
+                .from('companies')
+                .update(updateData)
+                .eq('id', id);
 
-        return alert(
-            'حدث خطأ أثناء التحديث: ' +
-            error.message
-        );
-    }
+        if (error) {
 
-    closeEditCompanyModal();
+            return alert(
+                recordSaveError(error, 'حدث خطأ أثناء التحديث: ')
+            );
+        }
 
-    fetchCompanies();
+        closeEditCompanyModal();
+
+        fetchCompanies();
+    });
 }
 
 async function deleteCompany(id) {
@@ -2362,6 +2411,9 @@ function renderCasesTable(
     casesData
 ) {
 
+    casesData = casesData || [];
+    const matchingCases = filterManagementRows(casesData, 'casesSearch', ['name', 'client_name', 'opponent', 'case_number', 'case_year', 'court_name', 'court_branch', 'assigned_lawyer']);
+
     const fullTable =
         document.getElementById(
             'casesTableBody'
@@ -2410,7 +2462,7 @@ function renderCasesTable(
     }
 
     fullTable.innerHTML =
-        casesData
+        matchingCases
             .map(c => {
 
                 const adminActions =
@@ -2562,6 +2614,8 @@ function renderCasesTable(
 
             })
             .join('');
+
+    if (!matchingCases.length) fullTable.innerHTML = '<tr><td colspan="11" style="text-align:center;">لا توجد قضايا مطابقة للبحث</td></tr>';
 
     if (recentTable) {
 
@@ -2719,314 +2773,317 @@ function filterCases(
 async function addCase() {
 
     if (!requireLogin()) return;
+    return withRecordSaveLock('cases', async () => {
 
-    const name =
-        document
-            .getElementById('caseName')
-            ?.value
-            .trim();
+        const name =
+            document
+                .getElementById('caseName')
+                ?.value
+                .trim();
 
-    const client_name =
-        document
-            .getElementById('clientName')
-            ?.value
-            .trim();
+        const client_name =
+            document
+                .getElementById('clientName')
+                ?.value
+                .trim();
 
-    const power_of_attorney_no =
-        document
-            .getElementById(
-                'powerOfAttorneyNo'
-            )
-            ?.value
-            .trim();
+        const power_of_attorney_no =
+            document
+                .getElementById(
+                    'powerOfAttorneyNo'
+                )
+                ?.value
+                .trim();
 
-    const poa_issue_place =
-        document
-            .getElementById(
-                'poaIssuePlace'
-            )
-            ?.value
-            .trim();
+        const poa_issue_place =
+            document
+                .getElementById(
+                    'poaIssuePlace'
+                )
+                ?.value
+                .trim();
 
-    const poa_issue_year =
-        document
-            .getElementById(
-                'poaIssueYear'
-            )
-            ?.value
-            .trim();
+        const poa_issue_year =
+            document
+                .getElementById(
+                    'poaIssueYear'
+                )
+                ?.value
+                .trim();
 
-    const opponent =
-        document
-            .getElementById('opponentName')
-            ?.value
-            .trim();
+        const opponent =
+            document
+                .getElementById('opponentName')
+                ?.value
+                .trim();
 
-    const opponent_phone =
-        document
-            .getElementById('opponentPhone')
-            ?.value
-            .trim();
+        const opponent_phone =
+            document
+                .getElementById('opponentPhone')
+                ?.value
+                .trim();
 
-    const case_type =
-        document
-            .getElementById('caseType')
-            ?.value;
+        const case_type =
+            document
+                .getElementById('caseType')
+                ?.value;
 
-    const status =
-        document
-            .getElementById('caseStatus')
-            ?.value;
+        const status =
+            document
+                .getElementById('caseStatus')
+                ?.value;
 
-    const case_number =
-        document
-            .getElementById('caseNumber')
-            ?.value
-            .trim();
+        const case_number =
+            document
+                .getElementById('caseNumber')
+                ?.value
+                .trim();
 
-    const case_year =
-        document
-            .getElementById('caseYear')
-            ?.value
-            .trim();
+        const case_year =
+            document
+                .getElementById('caseYear')
+                ?.value
+                .trim();
 
-    const court_name =
-        document
-            .getElementById('courtName')
-            ?.value
-            .trim();
+        const court_name =
+            document
+                .getElementById('courtName')
+                ?.value
+                .trim();
 
-    const court_branch =
-        document
-            .getElementById('courtBranch')
-            ?.value
-            .trim();
+        const court_branch =
+            document
+                .getElementById('courtBranch')
+                ?.value
+                .trim();
 
-    const assigned_lawyer =
-        document
-            .getElementById(
-                'assignedLawyer'
-            )
-            ?.value
-            .trim();
+        const assigned_lawyer =
+            document
+                .getElementById(
+                    'assignedLawyer'
+                )
+                ?.value
+                .trim();
 
-    const case_details =
-        document
-            .getElementById(
-                'caseDetailsNotes'
-            )
-            ?.value
-            .trim();
+        const case_details =
+            document
+                .getElementById(
+                    'caseDetailsNotes'
+                )
+                ?.value
+                .trim();
 
-    if (!name) {
+        if (!name) {
 
-        return alert(
-            'برجاء إدخال موضوع القضية'
-        );
-    }
+            return alert(
+                'برجاء إدخال موضوع القضية'
+            );
+        }
 
-    const attachment_url =
-        await uploadFileToSupabase(
-            'caseAttachmentInput'
-        );
+        if (!await recordNameAvailable('cases', name)) return;
 
-    const newCase = {
-
-        client_role: document.getElementById('clientRole')?.value.trim() || '',
-        opponent_role: document.getElementById('opponentRole')?.value.trim() || '',
-
-        name,
-        client_name,
-        power_of_attorney_no,
-        poa_issue_place,
-        poa_issue_year,
-        opponent,
-        opponent_phone,
-        case_type,
-        status,
-        case_number,
-        case_year,
-        court_name,
-        court_branch,
-        assigned_lawyer,
-        case_details,
-        attachment_url
-    };
-
-    const {
-        data: insertedCase,
-        error
-    } =
-        await db
-            .from('cases')
-            .insert([
-                newCase
-            ])
-            .select()
-            .single();
-
-    if (error) {
-
-        return alert(
-            'حدث خطأ أثناء الإضافة: ' +
-            error.message
-        );
-    }
-
-    const caseId =
-        insertedCase
-            ? insertedCase.id
-            : null;
-
-    if (caseId) {
-
-        const sessionPromises = [];
-
-        document
-            .querySelectorAll(
-                '#sessionsTableBody tr'
-            )
-            .forEach(
-                row => {
-
-                    const session_date =
-                        row.querySelector(
-                            '.session-date'
-                        )?.value;
-
-                    const session_subject =
-                        row.querySelector(
-                            '.session-subject'
-                        )?.value
-                        ?.trim();
-
-                    const attending_lawyer =
-                        row.querySelector(
-                            '.session-lawyer'
-                        )?.value
-                        ?.trim();
-
-                    const decision =
-                        row.querySelector(
-                            '.session-decision'
-                        )?.value
-                        ?.trim();
-
-                    if (
-                        session_date ||
-                        session_subject ||
-                        attending_lawyer ||
-                        decision
-                    ) {
-
-                        sessionPromises.push(
-                            db
-                                .from(
-                                    'case_sessions'
-                                )
-                                .insert([
-                                    {
-                                        case_id:
-                                            caseId,
-
-                                        session_date: sessionDateForStorage(session_date, row.dataset.sessionDate),
-
-                                        session_subject:
-                                            session_subject ||
-                                            '',
-
-                                        attending_lawyer:
-                                            attending_lawyer ||
-                                            '',
-
-                                        decision:
-                                            decision ||
-                                            ''
-                                    }
-                                ])
-                        );
-                    }
-                }
+        const attachment_url =
+            await uploadFileToSupabase(
+                'caseAttachmentInput'
             );
 
-        if (
-            sessionPromises.length > 0
-        ) {
+        const newCase = {
 
-            const results =
-                await Promise.all(
-                    sessionPromises
+            client_role: document.getElementById('clientRole')?.value.trim() || '',
+            opponent_role: document.getElementById('opponentRole')?.value.trim() || '',
+
+            name,
+            client_name,
+            power_of_attorney_no,
+            poa_issue_place,
+            poa_issue_year,
+            opponent,
+            opponent_phone,
+            case_type,
+            status,
+            case_number,
+            case_year,
+            court_name,
+            court_branch,
+            assigned_lawyer,
+            case_details,
+            attachment_url
+        };
+
+        const {
+            data: insertedCase,
+            error
+        } =
+            await db
+                .from('cases')
+                .insert([
+                    newCase
+                ])
+                .select()
+                .single();
+
+        if (error) {
+
+            return alert(
+                recordSaveError(error, 'حدث خطأ أثناء الإضافة: ')
+            );
+        }
+
+        const caseId =
+            insertedCase
+                ? insertedCase.id
+                : null;
+
+        if (caseId) {
+
+            const sessionPromises = [];
+
+            document
+                .querySelectorAll(
+                    '#sessionsTableBody tr'
+                )
+                .forEach(
+                    row => {
+
+                        const session_date =
+                            row.querySelector(
+                                '.session-date'
+                            )?.value;
+
+                        const session_subject =
+                            row.querySelector(
+                                '.session-subject'
+                            )?.value
+                            ?.trim();
+
+                        const attending_lawyer =
+                            row.querySelector(
+                                '.session-lawyer'
+                            )?.value
+                            ?.trim();
+
+                        const decision =
+                            row.querySelector(
+                                '.session-decision'
+                            )?.value
+                            ?.trim();
+
+                        if (
+                            session_date ||
+                            session_subject ||
+                            attending_lawyer ||
+                            decision
+                        ) {
+
+                            sessionPromises.push(
+                                db
+                                    .from(
+                                        'case_sessions'
+                                    )
+                                    .insert([
+                                        {
+                                            case_id:
+                                                caseId,
+
+                                            session_date: sessionDateForStorage(session_date, row.dataset.sessionDate),
+
+                                            session_subject:
+                                                session_subject ||
+                                                '',
+
+                                            attending_lawyer:
+                                                attending_lawyer ||
+                                                '',
+
+                                            decision:
+                                                decision ||
+                                                ''
+                                        }
+                                    ])
+                            );
+                        }
+                    }
                 );
 
-            const failedSession =
-                results.find(
-                    result =>
-                        result.error
-                );
+            if (
+                sessionPromises.length > 0
+            ) {
 
-            if (failedSession) {
+                const results =
+                    await Promise.all(
+                        sessionPromises
+                    );
 
-                console.error(
-                    'Session insert error:',
-                    failedSession.error
-                );
+                const failedSession =
+                    results.find(
+                        result =>
+                            result.error
+                    );
 
-                alert(
-                    'تم إنشاء القضية، لكن حدث خطأ أثناء حفظ إحدى الجلسات: ' +
-                    failedSession.error.message
-                );
+                if (failedSession) {
+
+                    console.error(
+                        'Session insert error:',
+                        failedSession.error
+                    );
+
+                    alert(
+                        'تم إنشاء القضية، لكن حدث خطأ أثناء حفظ إحدى الجلسات: ' +
+                        failedSession.error.message
+                    );
+                }
             }
         }
-    }
 
-    alert(
-        'تمت إضافة القضية بنجاح!'
-    );
-
-    const fieldsToReset = [
-
-        'caseName',
-        'clientName',
-        'powerOfAttorneyNo',
-        'poaIssuePlace',
-        'poaIssueYear',
-        'opponentName',
-        'clientRole',
-        'opponentRole',
-        'opponentPhone',
-        'caseNumber',
-        'caseYear',
-        'courtName',
-        'courtBranch',
-        'assignedLawyer',
-        'caseDetailsNotes',
-        'caseAttachmentInput'
-    ];
-
-    fieldsToReset.forEach(
-        id => {
-
-            const el =
-                document.getElementById(
-                    id
-                );
-
-            if (el) {
-                el.value = '';
-            }
-        }
-    );
-
-    const sessionsTableBody =
-        document.getElementById(
-            'sessionsTableBody'
+        alert(
+            'تمت إضافة القضية بنجاح!'
         );
 
-    if (sessionsTableBody) {
-        sessionsTableBody.innerHTML = '';
-    }
+        const fieldsToReset = [
 
-    fetchCases();
+            'caseName',
+            'clientName',
+            'powerOfAttorneyNo',
+            'poaIssuePlace',
+            'poaIssueYear',
+            'opponentName',
+            'clientRole',
+            'opponentRole',
+            'opponentPhone',
+            'caseNumber',
+            'caseYear',
+            'courtName',
+            'courtBranch',
+            'assignedLawyer',
+            'caseDetailsNotes',
+            'caseAttachmentInput'
+        ];
+
+        fieldsToReset.forEach(
+            id => {
+
+                const el =
+                    document.getElementById(
+                        id
+                    );
+
+                if (el) {
+                    el.value = '';
+                }
+            }
+        );
+
+        const sessionsTableBody =
+            document.getElementById(
+                'sessionsTableBody'
+            );
+
+        if (sessionsTableBody) {
+            sessionsTableBody.innerHTML = '';
+        }
+
+        fetchCases();
+    });
 }
 
 async function deleteCase(
@@ -3446,320 +3503,323 @@ function closeEditModal() {
 async function saveCaseUpdate() {
 
     if (!requireAdmin()) return;
+    return withRecordSaveLock('cases', async () => {
 
-    const id =
-        document.getElementById(
-            'editCaseId'
-        ).value;
-
-    const getValue =
-        (
-            id
-        ) => {
-
-            return (
-                document.getElementById(
-                    id
-                )?.value ||
-                ''
-            ).trim();
-        };
-
-    const name =
-        getValue(
-            'editCaseName'
-        );
-
-    const client_name =
-        getValue(
-            'editClientName'
-        );
-
-    const power_of_attorney_no =
-        getValue(
-            'editPowerOfAttorneyNo'
-        );
-
-    const poa_issue_place =
-        getValue(
-            'editPoaIssuePlace'
-        );
-
-    const poa_issue_year =
-        getValue(
-            'editPoaIssueYear'
-        );
-
-    const opponent =
-        getValue(
-            'editOpponentName'
-        );
-
-    const opponent_phone =
-        getValue(
-            'editOpponentPhone'
-        );
-
-    const case_type =
-        document.getElementById(
-            'editCaseType'
-        )?.value || '';
-
-    const status =
-        document.getElementById(
-            'editCaseStatus'
-        )?.value || '';
-
-    const case_number =
-        getValue(
-            'editCaseNumber'
-        );
-
-    const case_year =
-        getValue(
-            'editCaseYear'
-        );
-
-    const court_name =
-        getValue(
-            'editCourtName'
-        );
-
-    const court_branch =
-        getValue(
-            'editCourtBranch'
-        );
-
-    const assigned_lawyer =
-        getValue(
-            'editAssignedLawyer'
-        );
-
-    let case_details =
-        document.getElementById(
-            'editCaseDetailsNotes'
-        )?.value?.trim();
-
-    if (
-        case_details === undefined
-    ) {
-
-        case_details =
+        const id =
             document.getElementById(
-                'editCaseDetails'
-            )?.value?.trim() || '';
-    }
+                'editCaseId'
+            ).value;
 
-    if (!name) {
-
-        return alert(
-            'اسم القضية مطلوب'
-        );
-    }
-
-    const updateData = {
-
-        client_role: getValue('editClientRole'),
-        opponent_role: getValue('editOpponentRole'),
-
-        name,
-        client_name,
-        power_of_attorney_no,
-        poa_issue_place,
-        poa_issue_year,
-        opponent,
-        opponent_phone,
-        case_type,
-        status,
-        case_number,
-        case_year,
-        court_name,
-        court_branch,
-        assigned_lawyer,
-        case_details
-    };
-
-    const newAttachmentUrl =
-        await uploadFileToSupabase(
-            'editCaseAttachmentInput'
-        );
-
-    if (newAttachmentUrl) {
-
-        updateData.attachment_url =
-            newAttachmentUrl;
-    }
-
-    const {
-        error
-    } =
-        await db
-            .from('cases')
-            .update(
-                updateData
-            )
-            .eq(
-                'id',
+        const getValue =
+            (
                 id
-            );
+            ) => {
 
-    if (error) {
-
-        return alert(
-            'حدث خطأ أثناء التحديث: ' +
-            error.message
-        );
-    }
-
-    /*
-     * مهم جداً:
-     * هنا لا نحذف كل الجلسات.
-     *
-     * الجلسة التي لها ID يتم UPDATE لها.
-     * الجلسة الجديدة بدون ID يتم INSERT لها.
-     * أي جلسة قديمة لم يتم حذفها تظل موجودة.
-     */
-    const sessionsBody =
-        document.getElementById(
-            'editSessionsTableBody'
-        );
-
-    if (sessionsBody) {
-
-        const rows =
-            Array.from(
-                sessionsBody.querySelectorAll(
-                    'tr'
-                )
-            );
-
-        for (
-            const row of rows
-        ) {
-
-            const sessionId =
-                row.dataset.sessionId ||
-                null;
-
-            const session_date =
-                row.querySelector(
-                    '.session-date'
-                )?.value || null;
-
-            const session_subject =
-                row.querySelector(
-                    '.session-subject'
-                )?.value
-                ?.trim() || '';
-
-            const attending_lawyer =
-                row.querySelector(
-                    '.session-lawyer'
-                )?.value
-                ?.trim() || '';
-
-            const decision =
-                row.querySelector(
-                    '.session-decision'
-                )?.value
-                ?.trim() || '';
-
-            const hasData =
-                session_date ||
-                session_subject ||
-                attending_lawyer ||
-                decision;
-
-            if (!hasData) {
-                continue;
-            }
-
-            const sessionData = {
-
-                case_id:
-                    Number(id),
-
-                session_date: sessionDateForStorage(session_date, row.dataset.sessionDate),
-
-                session_subject,
-
-                attending_lawyer,
-
-                decision
+                return (
+                    document.getElementById(
+                        id
+                    )?.value ||
+                    ''
+                ).trim();
             };
 
-            if (sessionId) {
+        const name =
+            getValue(
+                'editCaseName'
+            );
 
-                delete sessionData.case_id;
+        const client_name =
+            getValue(
+                'editClientName'
+            );
 
-                const {
-                    error: sessionUpdateError
-                } =
-                    await db
-                        .from(
-                            'case_sessions'
-                        )
-                        .update(
-                            sessionData
-                        )
-                        .eq(
-                            'id',
-                            sessionId
-                        )
-                        .eq(
-                            'case_id',
-                            id
-                        );
+        const power_of_attorney_no =
+            getValue(
+                'editPowerOfAttorneyNo'
+            );
 
-                if (
-                    sessionUpdateError
-                ) {
+        const poa_issue_place =
+            getValue(
+                'editPoaIssuePlace'
+            );
 
-                    console.error(
-                        'Session update error:',
-                        sessionUpdateError
-                    );
+        const poa_issue_year =
+            getValue(
+                'editPoaIssueYear'
+            );
 
-                    return alert(
-                        'تم تحديث القضية، لكن حدث خطأ أثناء تحديث جلسة: ' +
-                        sessionUpdateError.message
-                    );
+        const opponent =
+            getValue(
+                'editOpponentName'
+            );
+
+        const opponent_phone =
+            getValue(
+                'editOpponentPhone'
+            );
+
+        const case_type =
+            document.getElementById(
+                'editCaseType'
+            )?.value || '';
+
+        const status =
+            document.getElementById(
+                'editCaseStatus'
+            )?.value || '';
+
+        const case_number =
+            getValue(
+                'editCaseNumber'
+            );
+
+        const case_year =
+            getValue(
+                'editCaseYear'
+            );
+
+        const court_name =
+            getValue(
+                'editCourtName'
+            );
+
+        const court_branch =
+            getValue(
+                'editCourtBranch'
+            );
+
+        const assigned_lawyer =
+            getValue(
+                'editAssignedLawyer'
+            );
+
+        let case_details =
+            document.getElementById(
+                'editCaseDetailsNotes'
+            )?.value?.trim();
+
+        if (
+            case_details === undefined
+        ) {
+
+            case_details =
+                document.getElementById(
+                    'editCaseDetails'
+                )?.value?.trim() || '';
+        }
+
+        if (!name) {
+
+            return alert(
+                'اسم القضية مطلوب'
+            );
+        }
+
+        if (!await recordNameAvailable('cases', name, id)) return;
+
+        const updateData = {
+
+            client_role: getValue('editClientRole'),
+            opponent_role: getValue('editOpponentRole'),
+
+            name,
+            client_name,
+            power_of_attorney_no,
+            poa_issue_place,
+            poa_issue_year,
+            opponent,
+            opponent_phone,
+            case_type,
+            status,
+            case_number,
+            case_year,
+            court_name,
+            court_branch,
+            assigned_lawyer,
+            case_details
+        };
+
+        const newAttachmentUrl =
+            await uploadFileToSupabase(
+                'editCaseAttachmentInput'
+            );
+
+        if (newAttachmentUrl) {
+
+            updateData.attachment_url =
+                newAttachmentUrl;
+        }
+
+        const {
+            error
+        } =
+            await db
+                .from('cases')
+                .update(
+                    updateData
+                )
+                .eq(
+                    'id',
+                    id
+                );
+
+        if (error) {
+
+            return alert(
+                recordSaveError(error, 'حدث خطأ أثناء التحديث: ')
+            );
+        }
+
+        /*
+         * مهم جداً:
+         * هنا لا نحذف كل الجلسات.
+         *
+         * الجلسة التي لها ID يتم UPDATE لها.
+         * الجلسة الجديدة بدون ID يتم INSERT لها.
+         * أي جلسة قديمة لم يتم حذفها تظل موجودة.
+         */
+        const sessionsBody =
+            document.getElementById(
+                'editSessionsTableBody'
+            );
+
+        if (sessionsBody) {
+
+            const rows =
+                Array.from(
+                    sessionsBody.querySelectorAll(
+                        'tr'
+                    )
+                );
+
+            for (
+                const row of rows
+            ) {
+
+                const sessionId =
+                    row.dataset.sessionId ||
+                    null;
+
+                const session_date =
+                    row.querySelector(
+                        '.session-date'
+                    )?.value || null;
+
+                const session_subject =
+                    row.querySelector(
+                        '.session-subject'
+                    )?.value
+                    ?.trim() || '';
+
+                const attending_lawyer =
+                    row.querySelector(
+                        '.session-lawyer'
+                    )?.value
+                    ?.trim() || '';
+
+                const decision =
+                    row.querySelector(
+                        '.session-decision'
+                    )?.value
+                    ?.trim() || '';
+
+                const hasData =
+                    session_date ||
+                    session_subject ||
+                    attending_lawyer ||
+                    decision;
+
+                if (!hasData) {
+                    continue;
                 }
 
-            } else {
+                const sessionData = {
 
-                const {
-                    error: sessionInsertError
-                } =
-                    await db
-                        .from(
-                            'case_sessions'
-                        )
-                        .insert([
-                            sessionData
-                        ]);
+                    case_id:
+                        Number(id),
 
-                if (
-                    sessionInsertError
-                ) {
+                    session_date: sessionDateForStorage(session_date, row.dataset.sessionDate),
 
-                    console.error(
-                        'Session insert error:',
+                    session_subject,
+
+                    attending_lawyer,
+
+                    decision
+                };
+
+                if (sessionId) {
+
+                    delete sessionData.case_id;
+
+                    const {
+                        error: sessionUpdateError
+                    } =
+                        await db
+                            .from(
+                                'case_sessions'
+                            )
+                            .update(
+                                sessionData
+                            )
+                            .eq(
+                                'id',
+                                sessionId
+                            )
+                            .eq(
+                                'case_id',
+                                id
+                            );
+
+                    if (
+                        sessionUpdateError
+                    ) {
+
+                        console.error(
+                            'Session update error:',
+                            sessionUpdateError
+                        );
+
+                        return alert(
+                            'تم تحديث القضية، لكن حدث خطأ أثناء تحديث جلسة: ' +
+                            sessionUpdateError.message
+                        );
+                    }
+
+                } else {
+
+                    const {
+                        error: sessionInsertError
+                    } =
+                        await db
+                            .from(
+                                'case_sessions'
+                            )
+                            .insert([
+                                sessionData
+                            ]);
+
+                    if (
                         sessionInsertError
-                    );
+                    ) {
 
-                    return alert(
-                        'تم تحديث القضية، لكن حدث خطأ أثناء إضافة جلسة جديدة: ' +
-                        sessionInsertError.message
-                    );
+                        console.error(
+                            'Session insert error:',
+                            sessionInsertError
+                        );
+
+                        return alert(
+                            'تم تحديث القضية، لكن حدث خطأ أثناء إضافة جلسة جديدة: ' +
+                            sessionInsertError.message
+                        );
+                    }
                 }
             }
         }
-    }
 
-    closeEditModal();
+        closeEditModal();
 
-    await fetchCases();
+        await fetchCases();
+    });
 }
 
 async function openCaseDetails(
@@ -4213,6 +4273,8 @@ function renderClientsTable(
     clientsData
 ) {
 
+    clientsData = filterManagementRows(clientsData || [], 'clientsSearch', ['name', 'phone']);
+
     const tbody =
         document.getElementById(
             'clientsTableBody'
@@ -4226,7 +4288,7 @@ function renderClientsTable(
     ) {
 
         tbody.innerHTML =
-            '<tr><td colspan="5" style="text-align:center;">لا يوجد موكلين حالياً</td></tr>';
+            '<tr><td colspan="5" style="text-align:center;">لا يوجد موكلون مطابقون للبحث أو مسجلون حالياً</td></tr>';
 
         return;
     }
@@ -4483,67 +4545,184 @@ async function removeClientExpenseRow(
 async function addClient() {
 
     if (!requireLogin()) return;
+    return withRecordSaveLock('clients', async () => {
 
-    const nameInput =
-        document.getElementById(
-            'clientFormName'
-        );
+        const nameInput =
+            document.getElementById(
+                'clientFormName'
+            );
 
-    const phoneInput =
-        document.getElementById(
-            'clientFormPhone'
-        );
+        const phoneInput =
+            document.getElementById(
+                'clientFormPhone'
+            );
 
-    const name =
-        nameInput
-            ? nameInput.value.trim()
-            : '';
+        const name =
+            nameInput
+                ? nameInput.value.trim()
+                : '';
 
-    const phone =
-        phoneInput
-            ? phoneInput.value.trim()
-            : '';
+        const phone =
+            phoneInput
+                ? phoneInput.value.trim()
+                : '';
 
-    if (!name) {
+        if (!name) {
 
-        return alert(
-            'يرجى إدخال اسم الموكل'
-        );
-    }
+            return alert(
+                'يرجى إدخال اسم الموكل'
+            );
+        }
 
-    const id_card_url =
-        await uploadFileToSupabase(
-            'clientIdCardInput'
-        );
+        if (!await recordNameAvailable('clients', name)) return;
 
-    const {
-        data: insertedClient,
-        error
-    } =
-        await db
-            .from('clients')
-            .insert([
-                {
-                    name,
-                    phone,
-                    id_card_url
+        const id_card_url =
+            await uploadFileToSupabase(
+                'clientIdCardInput'
+            );
+
+        const {
+            data: insertedClient,
+            error
+        } =
+            await db
+                .from('clients')
+                .insert([
+                    {
+                        name,
+                        phone,
+                        id_card_url
+                    }
+                ])
+                .select()
+                .single();
+
+        if (error) {
+
+            return alert(
+                recordSaveError(error, 'حدث خطأ أثناء الإضافة: ')
+            );
+        }
+
+        const clientId =
+            insertedClient?.id;
+
+        if (clientId) {
+
+            const expensesBody =
+                document.getElementById(
+                    'clientExpensesTableBody'
+                );
+
+            if (expensesBody) {
+
+                const rows =
+                    Array.from(
+                        expensesBody.querySelectorAll(
+                            'tr'
+                        )
+                    );
+
+                for (
+                    const row of rows
+                ) {
+
+                    const amount =
+                        row.querySelector(
+                            '.client-expense-amount'
+                        )?.value;
+
+                    const expense_date =
+                        row.querySelector(
+                            '.client-expense-date'
+                        )?.value;
+
+                    const reason =
+                        row.querySelector(
+                            '.client-expense-reason'
+                        )?.value
+                        ?.trim();
+
+                    const spender =
+                        row.querySelector(
+                            '.client-expense-spender'
+                        )?.value
+                        ?.trim();
+
+                    if (
+                        !amount &&
+                        !expense_date &&
+                        !reason &&
+                        !spender
+                    ) {
+                        continue;
+                    }
+
+                    const {
+                        error: expenseError
+                    } =
+                        await db
+                            .from(
+                                'client_expenses'
+                            )
+                            .insert([
+                                {
+                                    client_id:
+                                        clientId,
+
+                                    amount:
+                                        amount
+                                            ? Number(amount)
+                                            : 0,
+
+                                    expense_date:
+                                        expense_date ||
+                                        null,
+
+                                    reason:
+                                        reason ||
+                                        '',
+
+                                    spender:
+                                        spender ||
+                                        ''
+                                }
+                            ]);
+
+                    if (expenseError) {
+
+                        console.error(
+                            'Client expense insert error:',
+                            expenseError
+                        );
+
+                        alert(
+                            'تم إضافة الموكل، لكن حدث خطأ أثناء حفظ أحد المصروفات: ' +
+                            expenseError.message
+                        );
+
+                        break;
+                    }
                 }
-            ])
-            .select()
-            .single();
+            }
+        }
 
-    if (error) {
+        if (nameInput) {
+            nameInput.value = '';
+        }
 
-        return alert(
-            'حدث خطأ أثناء الإضافة: ' +
-            error.message
-        );
-    }
+        if (phoneInput) {
+            phoneInput.value = '';
+        }
 
-    const clientId =
-        insertedClient?.id;
+        const fileInput =
+            document.getElementById(
+                'clientIdCardInput'
+            );
 
-    if (clientId) {
+        if (fileInput) {
+            fileInput.value = '';
+        }
 
         const expensesBody =
             document.getElementById(
@@ -4551,125 +4730,11 @@ async function addClient() {
             );
 
         if (expensesBody) {
-
-            const rows =
-                Array.from(
-                    expensesBody.querySelectorAll(
-                        'tr'
-                    )
-                );
-
-            for (
-                const row of rows
-            ) {
-
-                const amount =
-                    row.querySelector(
-                        '.client-expense-amount'
-                    )?.value;
-
-                const expense_date =
-                    row.querySelector(
-                        '.client-expense-date'
-                    )?.value;
-
-                const reason =
-                    row.querySelector(
-                        '.client-expense-reason'
-                    )?.value
-                    ?.trim();
-
-                const spender =
-                    row.querySelector(
-                        '.client-expense-spender'
-                    )?.value
-                    ?.trim();
-
-                if (
-                    !amount &&
-                    !expense_date &&
-                    !reason &&
-                    !spender
-                ) {
-                    continue;
-                }
-
-                const {
-                    error: expenseError
-                } =
-                    await db
-                        .from(
-                            'client_expenses'
-                        )
-                        .insert([
-                            {
-                                client_id:
-                                    clientId,
-
-                                amount:
-                                    amount
-                                        ? Number(amount)
-                                        : 0,
-
-                                expense_date:
-                                    expense_date ||
-                                    null,
-
-                                reason:
-                                    reason ||
-                                    '',
-
-                                spender:
-                                    spender ||
-                                    ''
-                            }
-                        ]);
-
-                if (expenseError) {
-
-                    console.error(
-                        'Client expense insert error:',
-                        expenseError
-                    );
-
-                    alert(
-                        'تم إضافة الموكل، لكن حدث خطأ أثناء حفظ أحد المصروفات: ' +
-                        expenseError.message
-                    );
-
-                    break;
-                }
-            }
+            expensesBody.innerHTML = '';
         }
-    }
 
-    if (nameInput) {
-        nameInput.value = '';
-    }
-
-    if (phoneInput) {
-        phoneInput.value = '';
-    }
-
-    const fileInput =
-        document.getElementById(
-            'clientIdCardInput'
-        );
-
-    if (fileInput) {
-        fileInput.value = '';
-    }
-
-    const expensesBody =
-        document.getElementById(
-            'clientExpensesTableBody'
-        );
-
-    if (expensesBody) {
-        expensesBody.innerHTML = '';
-    }
-
-    await fetchClients();
+        await fetchClients();
+    });
 }
 
 async function openClientDetails(
@@ -5230,197 +5295,200 @@ function closeClientEditDynamicModal() {
 async function saveClientUpdate() {
 
     if (!requireClientManagement()) return;
+    return withRecordSaveLock('clients', async () => {
 
-    const clientId =
-        document.getElementById(
-            'dynamicEditClientId'
-        )?.value;
+        const clientId =
+            document.getElementById(
+                'dynamicEditClientId'
+            )?.value;
 
-    const name =
-        document.getElementById(
-            'dynamicEditClientName'
-        )?.value
-        ?.trim();
+        const name =
+            document.getElementById(
+                'dynamicEditClientName'
+            )?.value
+            ?.trim();
 
-    const phone =
-        document.getElementById(
-            'dynamicEditClientPhone'
-        )?.value
-        ?.trim();
+        const phone =
+            document.getElementById(
+                'dynamicEditClientPhone'
+            )?.value
+            ?.trim();
 
-    if (!clientId) {
+        if (!clientId) {
 
-        return alert(
-            'لم يتم تحديد الموكل.'
-        );
-    }
+            return alert(
+                'لم يتم تحديد الموكل.'
+            );
+        }
 
-    if (!name) {
+        if (!name) {
 
-        return alert(
-            'اسم الموكل مطلوب.'
-        );
-    }
+            return alert(
+                'اسم الموكل مطلوب.'
+            );
+        }
 
-    const {
-        error: clientError
-    } =
-        await db
-            .from('clients')
-            .update({
-                name,
-                phone
-            })
-            .eq(
-                'id',
-                clientId
+        if (!await recordNameAvailable('clients', name, clientId)) return;
+
+        const {
+            error: clientError
+        } =
+            await db
+                .from('clients')
+                .update({
+                    name,
+                    phone
+                })
+                .eq(
+                    'id',
+                    clientId
+                );
+
+        if (clientError) {
+
+            return alert(
+                recordSaveError(clientError, 'حدث خطأ أثناء تحديث الموكل: ')
+            );
+        }
+
+        const body =
+            document.getElementById(
+                'dynamicEditClientExpensesBody'
             );
 
-    if (clientError) {
+        if (body) {
 
-        return alert(
-            'حدث خطأ أثناء تحديث الموكل: ' +
-            clientError.message
-        );
-    }
+            const rows =
+                Array.from(
+                    body.querySelectorAll(
+                        'tr'
+                    )
+                );
 
-    const body =
-        document.getElementById(
-            'dynamicEditClientExpensesBody'
-        );
+            for (
+                const row of rows
+            ) {
 
-    if (body) {
+                const expenseId =
+                    row.dataset.expenseId ||
+                    null;
 
-        const rows =
-            Array.from(
-                body.querySelectorAll(
-                    'tr'
-                )
-            );
+                const amount =
+                    row.querySelector(
+                        '.client-expense-amount'
+                    )?.value;
 
-        for (
-            const row of rows
-        ) {
+                const expense_date =
+                    row.querySelector(
+                        '.client-expense-date'
+                    )?.value;
 
-            const expenseId =
-                row.dataset.expenseId ||
-                null;
+                const reason =
+                    row.querySelector(
+                        '.client-expense-reason'
+                    )?.value
+                    ?.trim() || '';
 
-            const amount =
-                row.querySelector(
-                    '.client-expense-amount'
-                )?.value;
+                const spender =
+                    row.querySelector(
+                        '.client-expense-spender'
+                    )?.value
+                    ?.trim() || '';
 
-            const expense_date =
-                row.querySelector(
-                    '.client-expense-date'
-                )?.value;
-
-            const reason =
-                row.querySelector(
-                    '.client-expense-reason'
-                )?.value
-                ?.trim() || '';
-
-            const spender =
-                row.querySelector(
-                    '.client-expense-spender'
-                )?.value
-                ?.trim() || '';
-
-            const hasData =
-                amount ||
-                expense_date ||
-                reason ||
-                spender;
-
-            if (!hasData) {
-                continue;
-            }
-
-            const expenseData = {
-
-                amount:
-                    amount
-                        ? Number(amount)
-                        : 0,
-
-                expense_date:
+                const hasData =
+                    amount ||
                     expense_date ||
-                    null,
+                    reason ||
+                    spender;
 
-                reason,
-
-                spender
-            };
-
-            if (expenseId) {
-
-                const {
-                    error: expenseUpdateError
-                } =
-                    await db
-                        .from(
-                            'client_expenses'
-                        )
-                        .update(
-                            expenseData
-                        )
-                        .eq(
-                            'id',
-                            expenseId
-                        )
-                        .eq(
-                            'client_id',
-                            clientId
-                        );
-
-                if (
-                    expenseUpdateError
-                ) {
-
-                    return alert(
-                        'تم تحديث الموكل، لكن حدث خطأ أثناء تحديث مصروف: ' +
-                        expenseUpdateError.message
-                    );
+                if (!hasData) {
+                    continue;
                 }
 
-            } else {
+                const expenseData = {
 
-                const {
-                    error: expenseInsertError
-                } =
-                    await db
-                        .from(
-                            'client_expenses'
-                        )
-                        .insert([
-                            {
-                                client_id:
-                                    Number(
-                                        clientId
-                                    ),
+                    amount:
+                        amount
+                            ? Number(amount)
+                            : 0,
 
-                                ...expenseData
-                            }
-                        ]);
+                    expense_date:
+                        expense_date ||
+                        null,
 
-                if (
-                    expenseInsertError
-                ) {
+                    reason,
 
-                    return alert(
-                        'تم تحديث الموكل، لكن حدث خطأ أثناء إضافة المصروف: ' +
-                        expenseInsertError.message
-                    );
+                    spender
+                };
+
+                if (expenseId) {
+
+                    const {
+                        error: expenseUpdateError
+                    } =
+                        await db
+                            .from(
+                                'client_expenses'
+                            )
+                            .update(
+                                expenseData
+                            )
+                            .eq(
+                                'id',
+                                expenseId
+                            )
+                            .eq(
+                                'client_id',
+                                clientId
+                            );
+
+                    if (
+                        expenseUpdateError
+                    ) {
+
+                        return alert(
+                            'تم تحديث الموكل، لكن حدث خطأ أثناء تحديث مصروف: ' +
+                            expenseUpdateError.message
+                        );
+                    }
+
+                } else {
+
+                    const {
+                        error: expenseInsertError
+                    } =
+                        await db
+                            .from(
+                                'client_expenses'
+                            )
+                            .insert([
+                                {
+                                    client_id:
+                                        Number(
+                                            clientId
+                                        ),
+
+                                    ...expenseData
+                                }
+                            ]);
+
+                    if (
+                        expenseInsertError
+                    ) {
+
+                        return alert(
+                            'تم تحديث الموكل، لكن حدث خطأ أثناء إضافة المصروف: ' +
+                            expenseInsertError.message
+                        );
+                    }
                 }
             }
         }
-    }
 
-    closeClientEditDynamicModal();
+        closeClientEditDynamicModal();
 
-    await fetchClients();
+        await fetchClients();
+    });
 }
 
 async function deleteClient(
