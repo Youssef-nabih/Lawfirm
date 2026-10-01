@@ -9,6 +9,7 @@ const fs = require('node:fs'), assert = require('node:assert/strict');
         page.on('dialog', async dialog => {alerts.push(dialog.message()); await dialog.accept();});
         await page.setContent(fs.readFileSync('index.html','utf8').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<link[^>]+>/g,''));
         await page.addStyleTag({content:fs.readFileSync('theme.css','utf8')});
+        await page.addStyleTag({content:fs.readFileSync('pwa.css','utf8')});
         await page.evaluate(() => {
             window.rows = {
                 companies:[{id:1,name:'شركة النور',phone:'010123',tax_id:'456'},{id:2,name:'شركة الأمل'}],

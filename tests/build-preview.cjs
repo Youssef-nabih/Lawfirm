@@ -31,6 +31,7 @@ document.addEventListener('click',event=>{const b=event.target.closest('button,a
 `;
 let html=fs.readFileSync('index.html','utf8').replace(/<script[\s\S]*?<\/script>/g,'');
 html=html.replace('href="theme.css"','href="../theme.css"').replace('href="experience.css"','href="../experience.css"');
+html=html.replace('href="pwa.css"','href="../pwa.css"').replace(/(href|src)="icons\//g,'$1="../icons/').replace(/<link rel="manifest"[^>]+>/,'');
 html=html.replace('</body>',`<style>.demo-notice{font-size:10px;color:#98744e}.logout-btn{display:none}</style><script>${mock}</script><script src="../app.js"></script><script src="../workspace.js"></script><script src="../experience.js"></script><script>${init}</script></body>`);
 fs.writeFileSync(path.join(dir,'index.html'),html);
 console.log('Preview built with isolated synthetic data.');
