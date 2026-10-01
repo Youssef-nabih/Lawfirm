@@ -2412,7 +2412,7 @@ function renderCasesTable(
 ) {
 
     casesData = casesData || [];
-    const matchingCases = filterManagementRows(casesData, 'casesSearch', ['name', 'client_name', 'opponent', 'case_number', 'case_year', 'court_name', 'court_branch', 'assigned_lawyer']);
+    const matchingCases = filterManagementRows(casesData, 'casesSearch', ['name', 'client_name', 'opponent', 'case_number', 'case_year', 'case_description', 'court_name', 'court_branch', 'assigned_lawyer']);
 
     const fullTable =
         document.getElementById(
@@ -2429,7 +2429,7 @@ function renderCasesTable(
             c =>
                 c.status === 'جارية' ||
                 c.status === 'جديدة' ||
-                !c.status
+                c.status === 'مؤجلة'
         );
 
     const countStat =
@@ -2548,6 +2548,12 @@ function renderCasesTable(
 
                         <td>
 
+                            ${escapeHtml(
+                                c.case_description || '—'
+                            )}
+                        </td>
+
+                        <td>
                             ${escapeHtml(
                                 c.court_name ||
                                 'غير محدد'
@@ -2845,6 +2851,8 @@ async function addCase() {
                 ?.value
                 .trim();
 
+        const case_description = document.getElementById('caseDescription')?.value.trim() || '';
+
         const court_name =
             document
                 .getElementById('courtName')
@@ -2901,6 +2909,7 @@ async function addCase() {
             status,
             case_number,
             case_year,
+            case_description,
             court_name,
             court_branch,
             assigned_lawyer,
@@ -3050,6 +3059,7 @@ async function addCase() {
             'opponentPhone',
             'caseNumber',
             'caseYear',
+            'caseDescription',
             'courtName',
             'courtBranch',
             'assignedLawyer',
@@ -3223,6 +3233,11 @@ async function openEditModal(
     setValue(
         'editCaseYear',
         item.case_year || '2026'
+    );
+
+    setValue(
+        'editCaseDescription',
+        item.case_description
     );
 
     setValue(
@@ -3576,6 +3591,8 @@ async function saveCaseUpdate() {
                 'editCaseYear'
             );
 
+        const case_description = getValue('editCaseDescription');
+
         const court_name =
             getValue(
                 'editCourtName'
@@ -3629,6 +3646,7 @@ async function saveCaseUpdate() {
             status,
             case_number,
             case_year,
+            case_description,
             court_name,
             court_branch,
             assigned_lawyer,
@@ -4059,6 +4077,11 @@ async function openCaseDetails(
                                 : '-'
                         }
                     </strong>
+                </div>
+
+                <div class="details-item">
+                    <label>الوصف</label>
+                    <strong>${escapeHtml(item.case_description || '-')}</strong>
                 </div>
 
                 <div class="details-item">
