@@ -1132,6 +1132,7 @@ async function logoutUser() {
     allCasesCache = [];
     allCompaniesCache = [];
     allClientsCache = [];
+    window.refreshOfficeSessions?.();
 
     const logoutButton =
         document.getElementById(
@@ -2243,6 +2244,7 @@ async function removeSessionRow(button) {
     }
 
     row.remove();
+    await window.refreshOfficeSessions?.();
 }
 
 function handleCaseTypeChange(
@@ -2404,7 +2406,7 @@ async function fetchCases() {
     renderCasesTable(
         allCasesCache
     );
-    window.refreshOfficeSessions?.();
+    await window.refreshOfficeSessions?.();
 }
 
 function renderCasesTable(
@@ -3495,6 +3497,7 @@ async function removeEditSessionRow(
     }
 
     row.remove();
+    await window.refreshOfficeSessions?.();
 }
 
 function closeEditModal() {

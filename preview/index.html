@@ -2,7 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#14253b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="مكتب أحمد نبيه">
+
+    <link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../icons/apple-touch-icon.png">
     <title>نظام إدارة مكتب احمد نبيه المحامي والشركات</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
@@ -299,8 +306,9 @@
     </style>
     <link rel="stylesheet" href="../theme.css">
     <!-- Supabase CDN -->
-    
+
 <link rel="stylesheet" href="../experience.css">
+    <link rel="stylesheet" href="../pwa.css">
 </head>
 
 <body>
@@ -310,6 +318,7 @@
             <div class="login-icon"><i class="fa-solid fa-scale-balanced"></i></div>
             <h2>مكتب احمد نبيه المحامي</h2>
             <p>تسجيل الدخول إلى النظام</p>
+            <button type="button" class="install-button install-login" data-install-app hidden><img src="../icons/icon-192.png" alt="" width="32" height="32"><span>المكتب معاك في كل مكان<small>إضافة التطبيق للشاشة الرئيسية</small></span><span aria-hidden="true">＋</span></button>
 
             <form id="loginForm" class="auth-form">
                 <div class="login-group">
@@ -369,6 +378,7 @@
             <button class="btn menu-toggle" type="button" aria-label="فتح القائمة" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
             <div class="header-context"><span>مساحة العمل</span><strong id="workspaceTitle">نظرة عامة</strong></div>
             <div class="user-info">
+                <button type="button" class="install-button install-header" data-install-app hidden aria-label="إضافة التطبيق للشاشة الرئيسية">＋ تثبيت التطبيق</button>
                 <i class="fa-solid fa-circle-user fa-lg"></i>
                 <span id="currentUserGreeting">جاري تحميل المستخدم...</span>
                 <button type="button" class="logout-btn" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
@@ -528,6 +538,7 @@
 
                 <div class="panel">
                     <div class="panel-header"><h2>دليل الشركات المسجلة</h2></div>
+                    <div class="form-group management-search"><label for="companiesSearch">بحث في الشركات</label><input type="search" id="companiesSearch" placeholder="اسم الشركة، الرقم الضريبي أو بيانات التواصل" oninput="renderCompaniesTable(allCompaniesCache)"></div>
                     <table>
                         <thead>
                             <tr>
@@ -570,6 +581,7 @@
                         </div>
                         <div class="form-group"><label>رقم القضية</label><input type="text" id="caseNumber"></div>
                         <div class="form-group"><label>السنة</label><input type="text" id="caseYear" value="2026"></div>
+                        <div class="form-group"><label for="caseDescription">الوصف</label><input type="text" id="caseDescription"></div>
                         <div class="form-group"><label>المحكمة</label><input type="text" id="courtName"></div>
                         <div class="form-group"><label>الدائرة</label><input type="text" id="courtBranch"></div>
                         <div class="form-group"><label>المحامي المسؤول</label><input type="text" id="assignedLawyer"></div>
@@ -619,14 +631,15 @@
 
                 <div class="panel">
                     <div class="panel-header"><h2>جدول القضايا الشامل</h2></div>
+                    <div class="form-group management-search"><label for="casesSearch">بحث في القضايا</label><input type="search" id="casesSearch" placeholder="اسم القضية، الموكل، الخصم، الرقم أو المحكمة" oninput="renderCasesTable(allCasesCache)"></div>
                     <table style="width:100%;">
                         <thead>
                             <tr>
-                                <th>اسم القضية</th><th>الموكل</th><th>الخصم</th><th>النوع</th><th>رقم القضية/السنة</th><th>المحكمة / الدائرة</th><th>المحامي المسؤول</th><th>المرفق</th><th>الحالة</th><th>إجراءات</th>
+                                <th>اسم القضية</th><th>الموكل</th><th>الخصم</th><th>النوع</th><th>رقم القضية/السنة</th><th>الوصف</th><th>المحكمة / الدائرة</th><th>المحامي المسؤول</th><th>المرفق</th><th>الحالة</th><th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="casesTableBody">
-                            <tr><td colspan="10">جاري تحميل البيانات...</td></tr>
+                            <tr><td colspan="11">جاري تحميل البيانات...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -685,6 +698,7 @@
 
                 <div class="panel">
                     <div class="panel-header"><h2>قائمة الموكلين</h2></div>
+                    <div class="form-group management-search"><label for="clientsSearch">بحث في الموكلين</label><input type="search" id="clientsSearch" placeholder="اسم الموكل أو رقم الهاتف" oninput="renderClientsTable(allClientsCache)"></div>
                     <table>
                         <thead>
                             <tr>
@@ -819,6 +833,7 @@
                 <div class="form-group"><label>نوع القضية</label><input type="text" id="editCaseType"></div>
                 <div class="form-group"><label>رقم القضية</label><input type="text" id="editCaseNumber"></div>
                 <div class="form-group"><label>السنة</label><input type="text" id="editCaseYear"></div>
+                <div class="form-group"><label for="editCaseDescription">الوصف</label><input type="text" id="editCaseDescription"></div>
                 <div class="form-group"><label>المحكمة</label><input type="text" id="editCourtName"></div>
                 <div class="form-group"><label>الدائرة</label><input type="text" id="editCourtBranch"></div>
                 <div class="form-group"><label>المحامي المسؤول</label><input type="text" id="editAssignedLawyer"></div>
@@ -847,12 +862,13 @@
         </div>
     </div>
 
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
 <style>.demo-notice{font-size:10px;color:#98744e}.logout-btn{display:none}</style><script>
 const demoDay = new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const demoCases = [
@@ -866,7 +882,7 @@ const demoSessions = [
  {id:3,case_id:2,session_date:demoDay+'T12:30',session_subject:'سماع أقوال الشهود',attending_lawyer:'سارة محمود',decision:''}
 ];
 const demoTasks=[{id:1,title:'مراجعة مذكرة الدفاع — الأفق',is_important:true,due_date:'2026-01-01',completed:false},{id:2,title:'استكمال مستندات التوكيل',due_date:'2026-01-02',completed:false},{id:3,title:'تجهيز ملف جلسة التعويض',due_date:demoDay,completed:false}];
-window.supabase={createClient:()=>({from(table){let filters=[];const q={select(){return q},order(){return q},eq(k,v){filters.push([k,v]);return q},then(resolve){let rows=table==='case_sessions'?demoSessions:table==='cases'?demoCases:table==='tasks'?demoTasks:[];return Promise.resolve(resolve({data:rows.filter(r=>filters.every(([k,v])=>r[k]===v)),error:null}));}};return q;}})};
+window.supabase={createClient:()=>({from(table){let filters=[],start=0,end=Infinity;const q={select(){return q},order(){return q},range(a,b){start=a;end=b;return q},eq(k,v){filters.push([k,v]);return q},then(resolve){let rows=table==='case_sessions'?demoSessions:table==='cases'?demoCases:table==='tasks'?demoTasks:[];return Promise.resolve(resolve({data:rows.filter(r=>filters.every(([k,v])=>r[k]===v)).slice(start,end+1),error:null}));}};return q;}})};
 </script><script src="../app.js"></script><script src="../workspace.js"></script><script src="../experience.js"></script><script>
 initializeApp=async()=>{
 currentUser={id:'demo'};currentProfile={role:'admin',status:'approved'};

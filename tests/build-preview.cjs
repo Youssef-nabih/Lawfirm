@@ -15,7 +15,7 @@ const demoSessions = [
  {id:3,case_id:2,session_date:demoDay+'T12:30',session_subject:'سماع أقوال الشهود',attending_lawyer:'سارة محمود',decision:''}
 ];
 const demoTasks=[{id:1,title:'مراجعة مذكرة الدفاع — الأفق',is_important:true,due_date:'2026-01-01',completed:false},{id:2,title:'استكمال مستندات التوكيل',due_date:'2026-01-02',completed:false},{id:3,title:'تجهيز ملف جلسة التعويض',due_date:demoDay,completed:false}];
-window.supabase={createClient:()=>({from(table){let filters=[];const q={select(){return q},order(){return q},eq(k,v){filters.push([k,v]);return q},then(resolve){let rows=table==='case_sessions'?demoSessions:table==='cases'?demoCases:table==='tasks'?demoTasks:[];return Promise.resolve(resolve({data:rows.filter(r=>filters.every(([k,v])=>r[k]===v)),error:null}));}};return q;}})};
+window.supabase={createClient:()=>({from(table){let filters=[],start=0,end=Infinity;const q={select(){return q},order(){return q},range(a,b){start=a;end=b;return q},eq(k,v){filters.push([k,v]);return q},then(resolve){let rows=table==='case_sessions'?demoSessions:table==='cases'?demoCases:table==='tasks'?demoTasks:[];return Promise.resolve(resolve({data:rows.filter(r=>filters.every(([k,v])=>r[k]===v)).slice(start,end+1),error:null}));}};return q;}})};
 `;
 const init = `
 initializeApp=async()=>{
@@ -33,5 +33,5 @@ let html=fs.readFileSync('index.html','utf8').replace(/<script[\s\S]*?<\/script>
 html=html.replace('href="theme.css"','href="../theme.css"').replace('href="experience.css"','href="../experience.css"');
 html=html.replace('href="pwa.css"','href="../pwa.css"').replace(/(href|src)="icons\//g,'$1="../icons/').replace(/<link rel="manifest"[^>]+>/,'');
 html=html.replace('</body>',`<style>.demo-notice{font-size:10px;color:#98744e}.logout-btn{display:none}</style><script>${mock}</script><script src="../app.js"></script><script src="../workspace.js"></script><script src="../experience.js"></script><script>${init}</script></body>`);
-fs.writeFileSync(path.join(dir,'index.html'),html);
+fs.writeFileSync(path.join(dir,'index.html'),html.replace(/[\t ]+$/gm,''));
 console.log('Preview built with isolated synthetic data.');

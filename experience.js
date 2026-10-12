@@ -1,9 +1,30 @@
 /* Office overview: existing records and permissions remain the source of truth. */
 (() => {
   const e = escapeHtml;
-  const state = {sessions: [], tasks: [], filter: 'today', query: '', error: '', version: 0};
+  const state = {sessions: [], tasks: [], filter: 'today', query: '', error: '', version: 0, loaded: false, userId: null};
   const today = () => sessionDateForInput(new Date().toISOString()).slice(0, 10);
   const dateOf = value => value ? sessionDateForInput(value).slice(0, 10) : '';
+  const timestampOf = value => {
+    if (!value) return NaN;
+    try {
+      return Date.parse(/(Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : sessionDateForStorage(value));
+    } catch { return NaN; }
+  };
+  function caseSchedule(item, now = Date.now()) {
+    const dated = state.sessions.filter(s => String(s.case_id) === String(item.id))
+      .map(s => ({session: s, time: timestampOf(s.session_date)}))
+      .filter(s => Number.isFinite(s.time)).sort((a,b) => a.time - b.time);
+    const latest = dated.at(-1);
+    const next = dated.find(s => s.time >= now);
+    const overdue = Boolean(latest && latest.time < now && !['تمت','مؤرشفة'].includes(item.status));
+    return {latest, next, overdue};
+  }
+  function scheduleLabel(item) {
+    if (!state.loaded) return '<span class="case-session-note">جارٍ تحميل الجلسات…</span>';
+    if (state.error) return '<span class="case-session-note">تعذر تحميل موعد الجلسة</span>';
+    const {latest, overdue} = caseSchedule(item);
+    return `<span class="case-session-label">آخر جلسة مسجّلة</span><strong>${latest ? e(formatSessionDate(latest.session.session_date)) : 'لا يوجد موعد مسجّل'}</strong>${overdue ? '<span class="session-badge session-overdue">عدّى الموعد · حدّد الجلسة التالية</span>' : ''}`;
+  }
   const go = id => {
     const link = [...document.querySelectorAll('.sidebar a')].find(a => a.getAttribute('onclick')?.includes(`'${id}'`));
     switchPage(id, link);
@@ -26,12 +47,17 @@
   dock.innerHTML = `<button class="active" data-go="dashboard"><span>⌂</span>الرئيسية</button><button data-go="cases"><span>▤</span>القضايا</button><button data-go="tasks"><span>✓</span>المهام</button><button data-go="clients"><span>♙</span>الموكلون</button>`;
   document.body.append(dock);
   document.addEventListener('click', event => {
-    const button = event.target.closest('[data-go], [data-open-case], [data-period]');
+    const button = event.target.closest('[data-go], [data-open-case], [data-edit-case], [data-period]');
     if (!button) return;
     if (button.dataset.go) go(button.dataset.go);
     if (button.dataset.openCase) {
       const item = allCasesCache.find(c => String(c.id) === button.dataset.openCase);
       if (item) openCaseDetails(item.id);
+    }
+    if (button.dataset.editCase && isAdmin()) {
+      go('cases');
+      const item = allCasesCache.find(c => String(c.id) === button.dataset.editCase);
+      if (item) openEditModal(item.id);
     }
     if (button.dataset.period) {
       state.filter = button.dataset.period;
@@ -42,41 +68,68 @@
   document.getElementById('officeSearch').addEventListener('input', event => {state.query = event.target.value.trim().toLocaleLowerCase('ar');renderCards();});
   function renderCards() {
     const items = allCasesCache.filter(c => [c.name,c.client_name,c.case_number,c.court_name].some(v => String(v || '').toLocaleLowerCase('ar').includes(state.query)));
-    document.getElementById('officeCases').innerHTML = items.length ? items.slice(0,12).map(c => `<button class="case-card" data-open-case="${e(String(c.id))}"><div class="case-card-top"><span class="case-monogram">§</span><span class="case-status">${e(c.status || 'غير محددة')}</span></div><h3>${e(c.name || 'قضية بدون عنوان')}</h3><p>${e(c.client_name || 'لم يُحدد الموكل')}</p><div class="case-card-meta"><span>${e(c.case_number || '—')} / ${e(c.case_year || '—')}</span><span>${e(c.case_type || 'قضية')}</span></div><footer><span>${e(c.court_name || 'المحكمة غير محددة')}</span><span>فتح الملف ↗</span></footer></button>`).join('') : '<p class="empty-state">لا توجد قضايا مطابقة.</p>';
+    document.getElementById('officeCases').innerHTML = items.length ? items.map(c => `<button class="case-card${state.loaded && !state.error && caseSchedule(c).overdue ? ' case-needs-session' : ''}" data-open-case="${e(String(c.id))}"><div class="case-card-top"><span class="case-monogram">§</span><span class="case-status">${e(c.status || 'غير محددة')}</span></div><h3>${e(c.name || 'قضية بدون عنوان')}</h3><div class="case-client-session"><span class="case-client">${e(c.client_name || 'لم يُحدد الموكل')}</span><span class="case-session">${scheduleLabel(c)}</span></div><div class="case-card-meta"><span>${e(c.case_number || '—')} / ${e(c.case_year || '—')}</span><span>${e(c.case_type || 'قضية')}</span></div><footer><span>${e(c.court_name || 'المحكمة غير محددة')}</span><span>فتح الملف ↗</span></footer></button>`).join('') : '<p class="empty-state">لا توجد قضايا مطابقة.</p>';
+  }
+  function renderSessionReminders(day) {
+    if (!state.loaded) return '<p class="empty-state">جارٍ تحميل متابعة الجلسات…</p>';
+    if (state.error) return '<p class="empty-state">تعذر تحميل متابعة الجلسات.</p>';
+    const tomorrow = new Date(day + 'T12:00:00Z');
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const nextDay = tomorrow.toISOString().slice(0,10);
+    const reminders = allCasesCache.filter(c => !['تمت','مؤرشفة'].includes(c.status)).map(c => {
+      const schedule = caseSchedule(c);
+      return {c, ...schedule, due: schedule.overdue ? schedule.latest : schedule.next};
+    }).filter(r => r.overdue || (r.due && dateOf(r.due.session.session_date) <= nextDay))
+      .sort((a,b) => Number(b.overdue) - Number(a.overdue) || a.due.time - b.due.time);
+    if (!reminders.length) return '<p class="empty-state">لا توجد جلسات تحتاج متابعة اليوم أو غدًا.</p>';
+    return `<h3 class="session-reminders-heading">متابعة الجلسات <span>${reminders.length}</span></h3><div class="session-reminders">${reminders.map(({c,due,overdue}) => {
+      const label = overdue ? 'عدّى الموعد · حدّد الجلسة التالية' : dateOf(due.session.session_date) === day ? 'جلسة اليوم' : 'جلسة غدًا';
+      return `<div class="session-reminder${overdue ? ' session-reminder-overdue' : ''}"><button class="session-reminder-main" data-open-case="${e(String(c.id))}"><span class="session-badge ${overdue ? 'session-overdue' : 'session-upcoming'}">${label}</span><strong>${e(c.client_name || 'لم يُحدد الموكل')}</strong><small>${e(c.name || 'قضية بدون عنوان')} · ${e(formatSessionDate(due.session.session_date))}</small></button>${isAdmin() ? `<button class="session-followup" data-edit-case="${e(String(c.id))}">تحديث الجلسات ←</button>` : ''}</div>`;
+    }).join('')}</div>`;
   }
   function render() {
     const day = today();
-    const sessions = state.sessions.filter(s => allCasesCache.some(c => c.id === s.case_id));
+    const sessions = state.sessions.filter(s => Number.isFinite(timestampOf(s.session_date)) && allCasesCache.some(c => String(c.id) === String(s.case_id))).sort((a,b)=>timestampOf(a.session_date)-timestampOf(b.session_date));
     const visible = sessions.filter(s => state.filter === 'all' || (state.filter === 'today' ? dateOf(s.session_date) === day : dateOf(s.session_date) > day));
     document.getElementById('daySummary').textContent = `${sessions.filter(s => dateOf(s.session_date) === day).length} جلسات اليوم · ${state.tasks.filter(t=>!t.completed).length} مهام مفتوحة. يوم منظم يبدأ بصورة واضحة.`;
     document.getElementById('officeAgenda').innerHTML = state.error ? `<p class="empty-state">${e(state.error)}</p><button class="btn btn-secondary" id="retryAgenda">إعادة المحاولة</button>` : visible.length ? visible.slice(0,20).map(s => {
-      const c = allCasesCache.find(c=>c.id===s.case_id);
+      const c = allCasesCache.find(c=>String(c.id)===String(s.case_id));
       const label = s.session_date ? formatSessionDate(s.session_date) : 'بدون موعد';
-      return `<button class="agenda-row" data-open-case="${e(String(c.id))}"><span class="agenda-time">${e(label)}</span><span class="agenda-info"><strong>${e(c.name)}</strong><small>${e(s.session_subject || c.court_name || 'جلسة')} · ${e(s.attending_lawyer || 'المحامي غير محدد')}</small></span><span class="row-arrow">↗</span></button>`;
+      return `<button class="agenda-row" data-open-case="${e(String(c.id))}"><span class="agenda-time">${e(label)}</span><span class="agenda-info"><strong>${e(c.client_name || 'لم يُحدد الموكل')}</strong><small>${e(c.name)} · ${e(s.session_subject || c.court_name || 'جلسة')} · ${e(s.attending_lawyer || 'المحامي غير محدد')}</small></span><span class="row-arrow">↗</span></button>`;
     }).join('') : '<div class="quiet-state"><span>✓</span><h3>لا توجد جلسات في هذه الفترة</h3><p>يمكنك اختيار فترة أخرى أو إضافة جلسة من ملف القضية.</p></div>';
     document.getElementById('retryAgenda')?.addEventListener('click',window.refreshOfficeSessions);
     const overdue = state.tasks.filter(t=>!t.completed && (t.is_important || (t.due_date && t.due_date < day))).sort((a,b)=>Number(!!b.is_important)-Number(!!a.is_important));
-    document.getElementById('officePriorities').innerHTML = overdue.length ? overdue.slice(0,4).map(t=>`<button class="priority-item ${t.is_important ? 'task-important' : ''}" data-go="tasks"><span class="priority-mark">!</span><span><strong>${e(t.title || 'مهمة')}</strong><small>${t.is_important ? '★ مهمة جدًا · ' : ''}${t.due_date && t.due_date < day ? 'متأخرة · ' : ''}${e(t.due_date || 'بدون موعد')}</small></span><span>←</span></button>`).join('') : '<div class="quiet-state"><span>✓</span><h3>لا توجد مهام مهمة جدًا أو متأخرة</h3><p>تابع المهام القادمة للحفاظ على سير العمل.</p></div>';
+    document.getElementById('officePriorities').innerHTML = renderSessionReminders(day) + (overdue.length ? overdue.slice(0,4).map(t=>`<button class="priority-item ${t.is_important ? 'task-important' : ''}" data-go="tasks"><span class="priority-mark">!</span><span><strong>${e(t.title || 'مهمة')}</strong><small>${t.is_important ? '★ مهمة جدًا · ' : ''}${t.due_date && t.due_date < day ? 'متأخرة · ' : ''}${e(t.due_date || 'بدون موعد')}</small></span><span>←</span></button>`).join('') : '<div class="quiet-state"><span>✓</span><h3>لا توجد مهام مهمة جدًا أو متأخرة</h3><p>تابع المهام القادمة للحفاظ على سير العمل.</p></div>');
     renderCards();
   }
   window.updateOfficeTasks = tasks => {state.tasks = tasks || [];render();};
   window.refreshOfficeSessions = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {state.version++;state.sessions=[];state.loaded=false;state.userId=null;state.tasks=[];state.error='';render();return;}
     const version = ++state.version, userId = currentUser.id;
+    if (state.userId !== userId) {state.sessions=[];state.loaded=false;state.error='';state.userId=userId;render();}
     try {
-      const {data,error} = await db.from('case_sessions').select('*').order('session_date',{ascending:true});
-      if (version !== state.version || currentUser?.id !== userId) return;
-      if (error) throw error;
-      state.sessions = data || []; state.error = '';
-    } catch { if (version !== state.version || currentUser?.id !== userId) return; state.sessions=[];state.error='تعذر تحميل الجلسات. تحقق من الاتصال وأعد المحاولة.'; }
+      // Read every page: older history must not hide the latest scheduled session.
+      const sessions = [], pageSize = 500;
+      for (let start = 0; ; start += pageSize) {
+        const {data,error} = await db.from('case_sessions').select('*').order('id',{ascending:true}).range(start,start + pageSize - 1);
+        if (version !== state.version || currentUser?.id !== userId) return;
+        if (error) throw error;
+        sessions.push(...(data || []));
+        if (!data || data.length < pageSize) break;
+      }
+      state.sessions = sessions; state.error = ''; state.loaded=true;
+    } catch { if (version !== state.version || currentUser?.id !== userId) return; state.sessions=[];state.loaded=true;state.error='تعذر تحميل الجلسات. تحقق من الاتصال وأعد المحاولة.'; }
     render();
   };
+  // Keep reminders current when a session time passes while the dashboard stays open.
+  setInterval(() => {if (currentUser && !document.hidden) render();}, 60000);
+  document.addEventListener('visibilitychange', () => {if (!document.hidden && currentUser) window.refreshOfficeSessions();});
   window.enhanceCaseWorkspace = (overlay,item,sessions) => {
     overlay.classList.add('case-workspace');
     const modal = overlay.querySelector('.details-modal');
     const heading = modal.querySelector('h2'); heading.textContent = item.name || 'ملف القضية';
     modal.querySelector('.details-modal-header small').textContent = `ملف القضية / ${item.case_number || '—'} / ${item.case_year || '—'}`;
-    const next = sessions.find(s=>s.session_date && dateOf(s.session_date)>=today());
+    const next = sessions.filter(s=>timestampOf(s.session_date)>=Date.now()).sort((a,b)=>timestampOf(a.session_date)-timestampOf(b.session_date))[0];
     const brief = document.createElement('div'); brief.className='case-brief';
     brief.innerHTML=`<div><span>الموكل</span><strong>${e(item.client_name || 'غير محدد')}</strong></div><div><span>المحامي المسؤول</span><strong>${e(item.assigned_lawyer || 'غير محدد')}</strong></div><div><span>الجلسة القادمة</span><strong>${next ? e(formatSessionDate(next.session_date)) : 'لا يوجد موعد قادم'}</strong></div>`;
     modal.querySelector('.details-modal-header').after(brief);
