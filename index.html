@@ -369,6 +369,7 @@
             <li><a href="#" onclick="switchPage('cases', this); return false;"><i class="fa-solid fa-briefcase"></i> إدارة القضايا</a></li>
             <li><a href="#" onclick="switchPage('tasks', this); return false;"><i class="fa-solid fa-list-check"></i> المهام والمواعيد</a></li>
             <li><a href="#" onclick="switchPage('clients', this); return false;"><i class="fa-solid fa-users"></i> إدارة الموكلين</a></li>
+            <li id="adminNotesMenuItem" hidden><a href="#" onclick="switchPage('adminNotes', this); return false;"><i class="fa-solid fa-lightbulb"></i> ملاحظاتي وأفكاري</a></li>
             <li id="employeesMenuItem" hidden><a href="#" onclick="switchPage('employees', this); return false;"><i class="fa-solid fa-user-tie"></i> الموظفون</a></li>
         </ul>
     </div>
@@ -400,6 +401,25 @@
                             <tbody id="employeesTableBody" aria-live="polite"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <div id="adminNotes" class="page-section" hidden>
+                <div class="workspace-intro"><div><span class="eyebrow">مساحة خاصة بالمدير</span><h1>ملاحظاتي وأفكاري</h1><p>اكتب أفكارك وملاحظاتك وارجع لها وقت ما تحتاج.</p></div><div class="intro-seal" aria-hidden="true"><i class="fa-regular fa-lightbulb"></i></div></div>
+                <div class="panel admin-notes-composer">
+                    <div class="panel-header"><h2 data-notes-form-heading>ملاحظة جديدة</h2></div>
+                    <form data-notes-form>
+                        <input type="hidden" data-notes-id>
+                        <div class="form-group"><label for="adminNoteTitle">العنوان</label><input id="adminNoteTitle" type="text" data-notes-title maxlength="180" placeholder="عنوان مختصر للملاحظة" required></div>
+                        <div class="form-group"><label for="adminNoteContent">الملاحظة أو الفكرة</label><textarea id="adminNoteContent" data-notes-content rows="5" maxlength="10000" placeholder="اكتب هنا أي فكرة أو ملاحظة تريد حفظها..." required></textarea></div>
+                        <div class="admin-notes-form-actions"><button class="btn btn-primary" type="submit" data-notes-save>حفظ الملاحظة</button><button class="btn btn-secondary" type="button" data-notes-cancel hidden>إلغاء التعديل</button></div>
+                    </form>
+                    <p class="task-message" data-notes-status role="status" aria-live="polite"></p>
+                </div>
+                <div class="panel admin-notes-list-panel">
+                    <div class="panel-header"><div><h2>ملاحظاتي المحفوظة</h2><p class="section-note">تظهر هنا للمدير فقط.</p></div><button type="button" class="btn btn-secondary" data-notes-refresh>تحديث</button></div>
+                    <input class="management-search" type="search" data-notes-search placeholder="ابحث في العناوين والملاحظات" aria-label="ابحث في الملاحظات">
+                    <div class="admin-notes-list" data-notes-list aria-live="polite"></div>
                 </div>
             </div>
 
@@ -869,5 +889,6 @@
     <script src="excel-export.js"></script>
     <script src="backup.js"></script>
     <script src="activity.js"></script>
+    <script src="admin-notes.js"></script>
 </body>
 </html>

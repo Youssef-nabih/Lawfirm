@@ -1239,6 +1239,7 @@ function switchPage(
     element
 ) {
     if (pageId === 'employees' && !requireAdmin()) return;
+    if (pageId === 'adminNotes' && (!currentUser || !isAdmin() || currentProfile?.status !== 'approved')) return;
     if (pageId === 'activities' && (!currentUser || !isAdmin() || currentProfile?.status !== 'approved')) return;
 
     document
@@ -1280,6 +1281,7 @@ function switchPage(
         );
     }
     if (pageId === 'employees') fetchEmployees();
+    if (pageId === 'adminNotes' && window.loadAdminNotes) window.loadAdminNotes();
 
 }
 
@@ -6262,6 +6264,7 @@ let employeesRequestVersion = 0;
 
 function updateEmployeesVisibility() {
     if (window.updateActivityVisibility) window.updateActivityVisibility();
+    if (window.updateAdminNotesVisibility) window.updateAdminNotesVisibility();
     const allowed = Boolean(currentUser && isAdmin());
     const menu = document.getElementById('employeesMenuItem');
     const page = document.getElementById('employees');

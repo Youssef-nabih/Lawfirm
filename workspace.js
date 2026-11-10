@@ -1,5 +1,5 @@
 // Workspace presentation is independent of the existing authentication and data flows.
-const pageTitles = {dashboard:'نظرة عامة',companies:'إدارة الشركات',cases:'إدارة القضايا',tasks:'المهام والمواعيد',clients:'إدارة الموكلين',employees:'الموظفون'};
+const pageTitles = {dashboard:'نظرة عامة',companies:'إدارة الشركات',cases:'إدارة القضايا',tasks:'المهام والمواعيد',clients:'إدارة الموكلين',employees:'الموظفون',adminNotes:'ملاحظاتي وأفكاري'};
 const menuButton = document.querySelector('.menu-toggle');
 menuButton.addEventListener('click', () => {
     const open = document.querySelector('.sidebar').classList.toggle('open');

@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const tables = {companies:'الشركات',clients:'الموكلون',cases:'القضايا',case_sessions:'الجلسات',client_expenses:'المصروفات',tasks:'المهام العامة',company_tasks:'مهام الشركات'};
+const tables = {companies:'الشركات',clients:'الموكلون',cases:'القضايا',case_sessions:'الجلسات',client_expenses:'المصروفات',tasks:'المهام العامة',company_tasks:'مهام الشركات',admin_notes:'ملاحظاتي وأفكاري'};
 const LIMIT = 100 * 1024 * 1024;
 let busy=false, preview=null;
 const item=document.createElement('li'); item.hidden=true;
